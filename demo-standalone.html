@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassPath - Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg"></div>
+                <span class="text-xl font-bold text-slate-900">PassPath</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-slate-600" id="userRole">Student</span>
+                <button onclick="logout()" class="text-sm text-blue-600 hover:text-blue-700">Sign out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">Sign in to PassPath</h1>
+            <p class="text-sm text-slate-500 mb-6">Demo mode - no backend required</p>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" placeholder="student@demo.passpath.app" class="w-full px-3 py-2 border border-slate-300 rounded-lg" disabled>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" placeholder="••••••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg" disabled>
+                </div>
+                <button class="w-full bg-blue-600 text-white font-medium py-2 rounded-lg opacity-50 cursor-not-allowed">
+                    Sign in (requires backend)
+                </button>
+            </div>
+
+            <div class="border-t border-slate-200 pt-6">
+                <p class="text-sm font-medium text-slate-700 mb-3">Quick Demo Access</p>
+                <div class="space-y-2">
+                    <button onclick="login('student')" class="w-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 rounded-lg transition">
+                        Demo Student Account
+                    </button>
+                    <button onclick="login('parent')" class="w-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 rounded-lg transition">
+                        Demo Parent Account
+                    </button>
+                    <button onclick="login('admin')" class="w-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 rounded-lg transition">
+                        Demo Admin Account
+                    </button>
+                </div>
+                <p class="mt-3 text-xs text-slate-500 text-center">Static demo - no authentication required</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard (hidden by default) -->
+    <div id="dashboard" class="hidden max-w-7xl mx-auto p-6">
+        <!-- Student Dashboard -->
+        <div id="studentDashboard" class="hidden">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">Welcome back, Thabo! 👋</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Predicted Score</div>
+                    <div class="text-3xl font-bold text-blue-600">67%</div>
+                    <div class="text-xs text-green-600 mt-1">↑ 9% from 2 weeks ago</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Study Streak</div>
+                    <div class="text-3xl font-bold text-orange-600">4 days 🔥</div>
+                    <div class="text-xs text-slate-500 mt-1">Longest: 9 days</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Next Exam</div>
+                    <div class="text-3xl font-bold text-purple-600">45 days</div>
+                    <div class="text-xs text-slate-500 mt-1">Final Mathematics</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Today's Missions 🎯</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex-shrink-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-900">Revise: Algebraic Expressions</div>
+                                <div class="text-xs text-slate-500">Priority: High (78% importance)</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div class="flex-shrink-0 w-2 h-2 bg-slate-400 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-900">Revise: Euclidean Geometry</div>
+                                <div class="text-xs text-slate-500">Priority: Medium (40% importance)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition">
+                        Generate New Study Plan
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Subject Mastery 📊</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-slate-900">Euclidean Geometry</span>
+                                <span class="text-green-600 font-semibold">90%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">Strong - keep it up! 💪</div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-slate-900">Algebraic Expressions</span>
+                                <span class="text-red-600 font-semibold">40%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 40%"></div>
+                            </div>
+                            <div class="text-xs text-red-600 mt-1">⚠️ Needs attention - prioritized in study plan</div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full border border-slate-300 bg-white text-slate-700 font-medium py-2 rounded-lg hover:bg-slate-50 transition">
+                        Take Diagnostic Test
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parent Dashboard -->
+        <div id="parentDashboard" class="hidden">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">Welcome, Naledi! 👋</h1>
+            
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Your Children</h2>
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-semibold text-slate-900">Thabo Mokoena</div>
+                            <div class="text-sm text-slate-500">Grade 10 • Demo High School</div>
+                        </div>
+                        <button onclick="login('student')" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View Dashboard →
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-200">
+                        <div>
+                            <div class="text-xs text-slate-500">Predicted Score</div>
+                            <div class="text-xl font-bold text-blue-600">67%</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">Study Streak</div>
+                            <div class="text-xl font-bold text-orange-600">4 days</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">Weak Topics</div>
+                            <div class="text-xl font-bold text-red-600">1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h3 class="font-semibold text-slate-900 mb-2">💡 Parent Tip</h3>
+                <p class="text-slate-700 text-sm">Thabo is doing well in Geometry but struggling with Algebra. Consider scheduling extra practice sessions or tutoring for Algebraic Expressions.</p>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">Admin Dashboard 🔧</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Total Users</div>
+                    <div class="text-3xl font-bold text-slate-900">3</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Students</div>
+                    <div class="text-3xl font-bold text-blue-600">1</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Parents</div>
+                    <div class="text-3xl font-bold text-green-600">1</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                    <div class="text-sm text-slate-500 mb-1">Admins</div>
+                    <div class="text-3xl font-bold text-purple-600">1</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">System Users</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="border-b border-slate-200">
+                            <tr>
+                                <th class="text-left text-sm font-medium text-slate-700 pb-2">Email</th>
+                                <th class="text-left text-sm font-medium text-slate-700 pb-2">Role</th>
+                                <th class="text-left text-sm font-medium text-slate-700 pb-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr>
+                                <td class="py-3 text-sm text-slate-900">student@demo.passpath.app</td>
+                                <td class="py-3"><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Student</span></td>
+                                <td class="py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 text-sm text-slate-900">parent@demo.passpath.app</td>
+                                <td class="py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Parent</span></td>
+                                <td class="py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 text-sm text-slate-900">admin@demo.passpath.app</td>
+                                <td class="py-3"><span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Admin</span></td>
+                                <td class="py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Active</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRole = null;
+
+        function login(role) {
+            currentRole = role;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Hide all dashboards first
+            document.getElementById('studentDashboard').classList.add('hidden');
+            document.getElementById('parentDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            
+            // Show the appropriate dashboard
+            if (role === 'student') {
+                document.getElementById('studentDashboard').classList.remove('hidden');
+                document.getElementById('userRole').textContent = 'Student (Thabo Mokoena)';
+            } else if (role === 'parent') {
+                document.getElementById('parentDashboard').classList.remove('hidden');
+                document.getElementById('userRole').textContent = 'Parent (Naledi Mokoena)';
+            } else if (role === 'admin') {
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                document.getElementById('userRole').textContent = 'Admin';
+            }
+        }
+
+        function logout() {
+            currentRole = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

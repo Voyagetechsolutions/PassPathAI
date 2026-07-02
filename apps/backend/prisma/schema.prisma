@@ -1,0 +1,992 @@
+// PassPath data model — complete ERD across all 14 modules.
+// Conventions: snake_case tables/columns, cuid PKs, soft references via FK.
+// pgvector powers the AI retrieval layer (Module 5).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  // Pooled URL (above) is used at runtime; direct URL is used for migrations.
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector, pgcrypto]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  student
+  parent
+  admin
+}
+
+enum Province {
+  EASTERN_CAPE
+  FREE_STATE
+  GAUTENG
+  KWAZULU_NATAL
+  LIMPOPO
+  MPUMALANGA
+  NORTHERN_CAPE
+  NORTH_WEST
+  WESTERN_CAPE
+}
+
+enum Syllabus {
+  CAPS
+  IEB
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  EXAM_STYLE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TestStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  EXPIRED
+}
+
+enum MissionStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+enum KnowledgeSourceType {
+  CURRICULUM
+  PAST_PAPER
+  MARKING_GUIDE
+}
+
+enum ImportantDateType {
+  YEAR_END
+  EXAM_PERIOD
+  SUBJECT_EXAM
+  HOLIDAY
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 1 + 2 — IDENTITY, PROFILES, ROLES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  firebaseUid   String   @unique @map("firebase_uid")
+  email         String   @unique
+  role          Role     @default(student)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  isActive      Boolean  @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  studentProfile StudentProfile?
+  parentProfile  ParentProfile?
+  auditLogs      AuditLog[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model StudentProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique @map("user_id")
+  firstName String    @map("first_name")
+  surname   String
+  grade     Int // 8..12
+  school    String?
+  province  Province?
+  syllabus  Syllabus?
+  onboarded Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects        StudentSubject[]
+  subjectMarks    SubjectMark[]
+  diagnosticAttempts DiagnosticAttempt[]
+  examAttempts    ExamAttempt[]
+  topicMasteries  TopicMastery[]
+  mistakes        MistakeLog[]
+  weakTopics      WeakTopicProfile[]
+  studyPlans      StudyPlan[]
+  streak          StudyStreak?
+  predictions     PredictionSnapshot[]
+  aiQueries       AiQuery[]
+  careerMatches   CareerMatch[]
+  parentLinks     ParentChild[]
+  tutorConversations TutorConversation[]
+  learnerProfile  LearnerProfile?
+  examDates       StudentExamDate[]
+  subscription    Subscription?
+
+  @@index([grade])
+  @@index([province])
+  @@map("student_profiles")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+/// One Premium subscription per student. Free-tier students simply have no row
+/// here — `isPremium` is "an ACTIVE/PAST_DUE row whose period hasn't lapsed".
+model Subscription {
+  id                 String             @id @default(cuid())
+  studentId          String             @unique @map("student_id")
+  status             SubscriptionStatus @default(ACTIVE)
+  provider           String             @default("paystack")
+  providerCustomerId String?            @map("provider_customer_id")
+  providerSubRef     String?            @map("provider_sub_ref") // Paystack subscription_code
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  student  StudentProfile        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments SubscriptionPayment[]
+
+  @@map("subscriptions")
+}
+
+/// Payment/webhook event log — an audit trail for every Paystack event received,
+/// keyed by their reference so webhook retries are naturally idempotent.
+model SubscriptionPayment {
+  id             String   @id @default(cuid())
+  subscriptionId String   @map("subscription_id")
+  reference      String   @unique // Paystack transaction reference
+  amountCents    Int      @map("amount_cents")
+  status         String // 'success' | 'failed' | ...
+  paidAt         DateTime @default(now()) @map("paid_at")
+  raw            Json? // full webhook payload, for support/debugging
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("subscription_payments")
+}
+
+/// An exam date the student adds themselves, shown on their calendar. Distinct from
+/// ImportantDate (which holds shared/national dates managed by admins).
+model StudentExamDate {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  title     String
+  date      DateTime
+  subjectId String?  @map("subject_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, date])
+  @@map("student_exam_dates")
+}
+
+// A subject + the student's latest mark (used for career guidance / APS). Stored
+// independently of curriculum enrolment so any subject can be captured at onboarding.
+model SubjectMark {
+  id          String   @id @default(cuid())
+  studentId   String   @map("student_id")
+  subjectName String   @map("subject_name")
+  mark        Int // percentage 0..100
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectName])
+  @@index([studentId])
+  @@map("subject_marks")
+}
+
+model ParentProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  firstName String   @map("first_name")
+  surname   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children ParentChild[]
+
+  @@map("parent_profiles")
+}
+
+// Links a parent to a student (many-to-many: a parent may have several children).
+model ParentChild {
+  id        String   @id @default(cuid())
+  parentId  String   @map("parent_id")
+  studentId String   @map("student_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent  ParentProfile  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([studentId])
+  @@map("parent_children")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 3 — CAPS CURRICULUM ENGINE
+// Hierarchy: Grade(int on Subject) → Subject → Topic → Subtopic
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique // e.g. MATH-G10
+  grade     Int // 8..12
+  // CAPS importance weighting used for roadmap prioritisation (0..1).
+  weighting Float    @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  topics        Topic[]
+  students      StudentSubject[]
+  questions     Question[]
+  examPapers    ExamPaper[]
+  diagnostics   DiagnosticTest[]
+  importantDates ImportantDate[]
+  pastPapers    PastPaper[]
+  studentExamDates StudentExamDate[]
+
+  @@unique([name, grade])
+  @@index([grade])
+  @@map("subjects")
+}
+
+// Downloadable past exam papers and memos, uploaded by admin per subject + grade.
+model PastPaper {
+  id         String   @id @default(cuid())
+  title      String
+  subjectId  String?  @map("subject_id")
+  grade      Int
+  year       Int
+  kind       String // e.g. "Paper 1", "Paper 2", "Memo"
+  storageKey String   @map("storage_key")
+  mimeType   String   @map("mime_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([grade, subjectId])
+  @@map("past_papers")
+}
+
+model StudentSubject {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  subjectId String   @map("subject_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId])
+  @@index([subjectId])
+  @@map("student_subjects")
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  subjectId   String   @map("subject_id")
+  title       String
+  description String?
+  // Ordering within the subject + relative importance for prioritisation.
+  orderIndex  Int      @default(0) @map("order_index")
+  importance  Float    @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subject        Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subtopics      Subtopic[]
+  questions      Question[]
+  topicMasteries TopicMastery[]
+  weakProfiles   WeakTopicProfile[]
+  missions       DailyMission[]
+  lesson         Lesson?
+  tutorConversations TutorConversation[]
+
+  @@index([subjectId, orderIndex])
+  @@map("topics")
+}
+
+/// A back-and-forth tutoring conversation between a student and the AI tutor for a
+/// single topic. Persisted so the chat resumes when the student returns — it should
+/// feel like an ongoing relationship, not a fresh stranger each time.
+model TutorConversation {
+  id                 String   @id @default(cuid())
+  studentId          String   @map("student_id")
+  topicId            String   @map("topic_id")
+  /// Latest self-explanation rating (0–10): can the student teach the topic back?
+  understandingScore Int?     @map("understanding_score")
+  ratedAt            DateTime? @map("rated_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  student  StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  topic    Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  messages TutorMessage[]
+
+  @@unique([studentId, topicId])
+  @@index([studentId])
+  @@map("tutor_conversations")
+}
+
+model TutorMessage {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  role           String // 'user' | 'assistant'
+  content        String   @db.Text
+  /// If this turn was triggered by a starter chip (e.g. 'story'), recorded here.
+  starter        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation TutorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("tutor_messages")
+}
+
+/// The tutor's durable memory of HOW this learner understands best — the thing that
+/// makes it a friend who helps them pass. Accumulated from the starters they reach
+/// for and what the tutor observes when rating their explanations.
+model LearnerProfile {
+  id              String   @id @default(cuid())
+  studentId       String   @unique @map("student_id")
+  /// Explanation styles that work for this learner, most-recent first (e.g. story, real_world).
+  preferredStyles String[] @default([]) @map("preferred_styles")
+  /// Free-form running notes the tutor keeps (strengths, recurring sticking points).
+  notes           String   @default("") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("learner_profiles")
+}
+
+enum LessonStatus {
+  DRAFT
+  REVIEWED
+  PUBLISHED
+}
+
+/// A structured, owned lesson record for a topic — the product, not a PDF.
+/// AI-drafted (grounded in the CAPS syllabus), reviewable, improved by feedback.
+model Lesson {
+  id                String       @id @default(cuid())
+  topicId           String       @unique @map("topic_id")
+  subjectId         String       @map("subject_id")
+  learningObjective String       @map("learning_objective")
+  introduction      String
+  sections          Json // [{ heading, content }]
+  workedExamples    Json         @map("worked_examples") // [{ problem, solution }]
+  commonMistakes    Json         @map("common_mistakes") // string[]
+  memoryTricks      Json         @map("memory_tricks") // string[]
+  examTips          Json         @map("exam_tips") // string[]
+  revisionSummary   String       @map("revision_summary")
+  grounded          Boolean      @default(false)
+  status            LessonStatus @default(DRAFT)
+  model             String?
+  helpfulCount      Int          @default(0) @map("helpful_count")
+  notHelpfulCount   Int          @default(0) @map("not_helpful_count")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  topic    Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  feedback LessonFeedback[]
+
+  @@index([subjectId, status])
+  @@map("lessons")
+}
+
+model LessonFeedback {
+  id        String   @id @default(cuid())
+  lessonId  String   @map("lesson_id")
+  studentId String   @map("student_id")
+  helpful   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, studentId])
+  @@map("lesson_feedback")
+}
+
+model Subtopic {
+  id         String   @id @default(cuid())
+  topicId    String   @map("topic_id")
+  title      String
+  orderIndex Int      @default(0) @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  topic     Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@index([topicId, orderIndex])
+  @@map("subtopics")
+}
+
+// Raw ingested CAPS / curriculum documents (PDFs etc.). Chunks feed the AI layer.
+model CurriculumDocument {
+  id           String   @id @default(cuid())
+  title        String
+  subjectCode  String?  @map("subject_code")
+  grade        Int?
+  storageKey   String   @map("storage_key") // S3 key
+  mimeType     String   @map("mime_type")
+  pageCount    Int?     @map("page_count")
+  ingested     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  knowledgeChunks KnowledgeChunk[]
+
+  @@index([subjectCode, grade])
+  @@map("curriculum_documents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 5 — AI LEARNING ENGINE (grounded RAG, pgvector)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model KnowledgeChunk {
+  id          String              @id @default(cuid())
+  documentId  String?             @map("document_id")
+  sourceType  KnowledgeSourceType @map("source_type")
+  subjectCode String?             @map("subject_code")
+  grade       Int?
+  topicTitle  String?             @map("topic_title")
+  content     String
+  // 1536-d embedding (text-embedding-3-small). Queried via raw SQL (cosine).
+  embedding   Unsupported("vector(1536)")?
+  tokenCount  Int?                @map("token_count")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  document CurriculumDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  citations AiCitation[]
+
+  @@index([sourceType])
+  @@index([subjectCode, grade])
+  @@map("knowledge_chunks")
+}
+
+// Audit trail of every AI interaction — enforces "no source → no answer".
+model AiQuery {
+  id          String   @id @default(cuid())
+  studentId   String?  @map("student_id")
+  question    String
+  answered    Boolean  @default(false) // false when no grounding was found
+  answer      String?
+  model       String?
+  promptTokens Int?    @map("prompt_tokens")
+  completionTokens Int? @map("completion_tokens")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  student   StudentProfile? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  citations AiCitation[]
+
+  @@index([studentId])
+  @@index([answered])
+  @@map("ai_queries")
+}
+
+model AiCitation {
+  id        String   @id @default(cuid())
+  queryId   String   @map("query_id")
+  chunkId   String   @map("chunk_id")
+  score     Float // cosine similarity
+  createdAt DateTime @default(now()) @map("created_at")
+
+  query AiQuery        @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  chunk KnowledgeChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([queryId])
+  @@map("ai_citations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 6 — QUESTION BANK
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Question {
+  id          String       @id @default(cuid())
+  subjectId   String       @map("subject_id")
+  topicId     String       @map("topic_id")
+  subtopicId  String?      @map("subtopic_id")
+  type        QuestionType
+  difficulty  Difficulty
+  prompt      String
+  // For SHORT_ANSWER / EXAM_STYLE: the model answer / marking memo.
+  modelAnswer String?      @map("model_answer")
+  marks       Int          @default(1)
+  // Grounding: which knowledge chunk produced this question (nullable for seed data).
+  sourceChunkId String?    @map("source_chunk_id")
+  aiGenerated Boolean      @default(false) @map("ai_generated")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  subject  Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic    Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  subtopic Subtopic? @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  options  QuestionOption[]
+
+  diagnosticItems DiagnosticTestItem[]
+  examItems       ExamItem[]
+
+  @@index([subjectId, difficulty])
+  @@index([topicId])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String  @map("question_id")
+  label      String // A, B, C, D
+  text       String
+  isCorrect  Boolean @default(false) @map("is_correct")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 4 — DIAGNOSTIC TEST ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DiagnosticTest {
+  id        String   @id @default(cuid())
+  subjectId String   @map("subject_id")
+  grade     Int
+  title     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  subject  Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  items    DiagnosticTestItem[]
+  attempts DiagnosticAttempt[]
+
+  @@index([subjectId, grade])
+  @@map("diagnostic_tests")
+}
+
+model DiagnosticTestItem {
+  id         String @id @default(cuid())
+  testId     String @map("test_id")
+  questionId String @map("question_id")
+  orderIndex Int    @default(0) @map("order_index")
+
+  test     DiagnosticTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  question Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, questionId])
+  @@map("diagnostic_test_items")
+}
+
+model DiagnosticAttempt {
+  id          String     @id @default(cuid())
+  testId      String     @map("test_id")
+  studentId   String     @map("student_id")
+  status      TestStatus @default(IN_PROGRESS)
+  scorePercent Float?    @map("score_percent")
+  startedAt   DateTime   @default(now()) @map("started_at")
+  submittedAt DateTime?  @map("submitted_at")
+
+  test     DiagnosticTest    @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student  StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers  DiagnosticAnswer[]
+
+  @@index([studentId, status])
+  @@map("diagnostic_attempts")
+}
+
+model DiagnosticAnswer {
+  id          String   @id @default(cuid())
+  attemptId   String   @map("attempt_id")
+  questionId  String   @map("question_id")
+  response    String?  // selected option label or free text
+  isCorrect   Boolean? @map("is_correct")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  attempt DiagnosticAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("diagnostic_answers")
+}
+
+// Weak-topic profile produced from diagnostics (Module 4 output, Module 7 input).
+model WeakTopicProfile {
+  id           String   @id @default(cuid())
+  studentId    String   @map("student_id")
+  topicId      String   @map("topic_id")
+  weaknessScore Float   @map("weakness_score") // 0..1, higher = weaker
+  source       String   @default("diagnostic") // diagnostic | exam | practice
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  topic   Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, topicId])
+  @@index([studentId])
+  @@map("weak_topic_profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 7 — WEAKNESS TRACKING / MASTERY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TopicMastery {
+  id            String   @id @default(cuid())
+  studentId     String   @map("student_id")
+  topicId       String   @map("topic_id")
+  masteryScore  Float    @default(0) @map("mastery_score") // 0..1
+  weaknessScore Float    @default(0) @map("weakness_score") // 0..1
+  attempts      Int      @default(0)
+  correct       Int      @default(0)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  topic   Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, topicId])
+  @@index([studentId])
+  @@map("topic_mastery")
+}
+
+model MistakeLog {
+  id         String   @id @default(cuid())
+  studentId  String   @map("student_id")
+  questionId String   @map("question_id")
+  topicId    String?  @map("topic_id")
+  count      Int      @default(1) // repeat-mistake counter
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, questionId])
+  @@index([studentId])
+  @@map("mistake_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 8 — STUDY ROADMAP
+// ─────────────────────────────────────────────────────────────────────────────
+
+model StudyPlan {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weeklyPlans  WeeklyPlan[]
+  missions     DailyMission[]
+
+  @@index([studentId])
+  @@map("study_plans")
+}
+
+model WeeklyPlan {
+  id         String   @id @default(cuid())
+  planId     String   @map("plan_id")
+  weekNumber Int      @map("week_number")
+  focus      String // human-readable summary of the week's focus
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  plan     StudyPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  missions DailyMission[]
+
+  @@index([planId])
+  @@map("weekly_plans")
+}
+
+model DailyMission {
+  id           String        @id @default(cuid())
+  planId       String        @map("plan_id")
+  weeklyPlanId String?       @map("weekly_plan_id")
+  topicId      String?       @map("topic_id")
+  date         DateTime
+  title        String
+  description  String?
+  status       MissionStatus @default(PENDING)
+  priority     Int           @default(0) // higher = more urgent
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  plan       StudyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  weeklyPlan WeeklyPlan? @relation(fields: [weeklyPlanId], references: [id], onDelete: SetNull)
+  topic      Topic?      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  @@index([planId, date])
+  @@map("daily_missions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 9 — EXAM SIMULATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExamPaper {
+  id            String   @id @default(cuid())
+  subjectId     String   @map("subject_id")
+  grade         Int
+  title         String
+  durationMins  Int      @map("duration_mins")
+  totalMarks    Int      @map("total_marks")
+  isMock        Boolean  @default(true) @map("is_mock")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  subject  Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  sections ExamSection[]
+  attempts ExamAttempt[]
+
+  @@index([subjectId, grade])
+  @@map("exam_papers")
+}
+
+model ExamSection {
+  id         String @id @default(cuid())
+  paperId    String @map("paper_id")
+  title      String
+  orderIndex Int    @default(0) @map("order_index")
+
+  paper ExamPaper  @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  items ExamItem[]
+
+  @@index([paperId])
+  @@map("exam_sections")
+}
+
+model ExamItem {
+  id         String @id @default(cuid())
+  sectionId  String @map("section_id")
+  questionId String @map("question_id")
+  orderIndex Int    @default(0) @map("order_index")
+  marks      Int    @default(1)
+
+  section  ExamSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, questionId])
+  @@map("exam_items")
+}
+
+model ExamAttempt {
+  id           String     @id @default(cuid())
+  paperId      String     @map("paper_id")
+  studentId    String     @map("student_id")
+  status       TestStatus @default(IN_PROGRESS)
+  scorePercent Float?     @map("score_percent")
+  marksAwarded Int?       @map("marks_awarded")
+  startedAt    DateTime   @default(now()) @map("started_at")
+  // Hard deadline = startedAt + paper.durationMins, enforced in service.
+  deadlineAt   DateTime?  @map("deadline_at")
+  submittedAt  DateTime?  @map("submitted_at")
+
+  paper     ExamPaper      @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  responses ExamResponse[]
+
+  @@index([studentId, status])
+  @@map("exam_attempts")
+}
+
+model ExamResponse {
+  id          String   @id @default(cuid())
+  attemptId   String   @map("attempt_id")
+  examItemId  String   @map("exam_item_id")
+  response    String?
+  marksAwarded Int?    @map("marks_awarded")
+  isCorrect   Boolean? @map("is_correct")
+  feedback    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, examItemId])
+  @@map("exam_responses")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 10 — PERFORMANCE DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Snapshot of the predicted exam score over time (for trend charts).
+model PredictionSnapshot {
+  id              String   @id @default(cuid())
+  studentId       String   @map("student_id")
+  subjectId       String?  @map("subject_id")
+  predictedScore  Float    @map("predicted_score") // 0..100
+  confidence      Float    @default(0.5) // 0..1
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@map("prediction_snapshots")
+}
+
+model StudyStreak {
+  id            String   @id @default(cuid())
+  studentId     String   @unique @map("student_id")
+  currentStreak Int      @default(0) @map("current_streak")
+  longestStreak Int      @default(0) @map("longest_streak")
+  lastActiveDate DateTime? @map("last_active_date")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("study_streaks")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 11 — COUNTDOWN SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ImportantDate {
+  id        String            @id @default(cuid())
+  type      ImportantDateType
+  title     String
+  date      DateTime
+  // Optional scope: a subject-specific exam countdown.
+  subjectId String?           @map("subject_id")
+  grade     Int?
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([type, date])
+  @@map("important_dates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 12 — CAREER GUIDANCE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Career {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  description String
+  // Faculty grouping, e.g. "Engineering & the Built Environment".
+  faculty     String?
+  // Comma-free: stored as relations below.
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  programmes      UniversityProgramme[]
+  subjectRequirements CareerSubjectRequirement[]
+  matches         CareerMatch[]
+
+  @@map("careers")
+}
+
+model UniversityProgramme {
+  id            String   @id @default(cuid())
+  careerId      String   @map("career_id")
+  university    String
+  programmeName String   @map("programme_name")
+  // Admission Point Score threshold (SA APS system).
+  minAps        Int      @map("min_aps")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  career       Career                @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  requirements AdmissionRequirement[]
+
+  @@index([careerId])
+  @@map("university_programmes")
+}
+
+// Per-subject minimum mark required by a specific programme.
+model AdmissionRequirement {
+  id          String @id @default(cuid())
+  programmeId String @map("programme_id")
+  subjectName String @map("subject_name")
+  minPercent  Int    @map("min_percent")
+
+  programme UniversityProgramme @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+
+  @@index([programmeId])
+  @@map("admission_requirements")
+}
+
+// Subjects a career generally requires (independent of a specific programme).
+model CareerSubjectRequirement {
+  id          String @id @default(cuid())
+  careerId    String @map("career_id")
+  subjectName String @map("subject_name")
+  minPercent  Int    @default(50) @map("min_percent")
+
+  career Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+
+  @@index([careerId])
+  @@map("career_subject_requirements")
+}
+
+// Stored result of a student's career-match calculation.
+model CareerMatch {
+  id              String   @id @default(cuid())
+  studentId       String   @map("student_id")
+  careerId        String   @map("career_id")
+  eligible        Boolean  @default(false)
+  admissionLikelihood Float @map("admission_likelihood") // 0..1
+  computedAps     Int?     @map("computed_aps")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  career  Career         @relation(fields: [careerId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, careerId])
+  @@index([studentId])
+  @@map("career_matches")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 14 — ADMIN: AI SETTINGS + AUDIT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AiSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g. chat_model, retrieval_top_k, min_similarity
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?  @map("actor_id")
+  action    String // e.g. user.suspend, curriculum.import
+  target    String? // entity id / description
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_logs")
+}

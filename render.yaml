@@ -1,0 +1,39 @@
+# Render Blueprint — deploys the PassPath API on Render's free tier.
+# In the Render dashboard: New + → Blueprint → connect this repo → it reads this file.
+# Free-tier note: the service sleeps after ~15 min idle and takes ~50s to wake on
+# the next request. Fine for early access; upgrade the plan when users grow.
+services:
+  - type: web
+    name: passpath-api
+    runtime: node
+    plan: free
+    rootDir: apps/backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Secrets — fill these in the Render dashboard (values from apps/backend/.env
+      # and firebase-admin.json on your machine; never commit them).
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      # Optional — set when Paystack goes live.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      # PDFs aren't in the repo; keep local driver until an object store (e.g.
+      # Cloudflare R2 free tier) is wired via STORAGE_DRIVER=s3 + AWS_* vars.
+      - key: STORAGE_DRIVER
+        value: local

@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "PassPath",
+    "slug": "passpath",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "passpath",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1d4ed8"
+    },
+    "ios": { "supportsTablet": true },
+    "android": {
+      "adaptiveIcon": { "backgroundColor": "#1d4ed8" }
+    },
+    "web": { "bundler": "metro", "output": "static" },
+    "plugins": ["expo-router"],
+    "extra": {
+      "_comment_apiBaseUrl": "For Expo Go on physical device, use your machine's LAN IP (e.g., 192.168.1.10), NOT localhost",
+      "apiBaseUrl": "http://localhost:3000/api",
+      
+      "_comment_firebase": "Firebase Web SDK config from Firebase Console → Project Settings → Web App. Optional for dev mode (demo accounts), required for production Firebase auth.",
+      "firebase": {
+        "apiKey": "AIzaSy...",
+        "authDomain": "your-project.firebaseapp.com",
+        "projectId": "your-project-id",
+        "appId": "1:123456789:web:abc123..."
+      },
+      
+      "_comment_eas": "EAS Project ID for Expo Application Services (builds, updates, etc.)",
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
