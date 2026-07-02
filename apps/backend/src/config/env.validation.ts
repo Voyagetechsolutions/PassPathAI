@@ -17,11 +17,16 @@ class EnvironmentVariables {
   @IsString()
   NODE_ENV?: string;
 
+  // Redis is an optional cache — the app degrades gracefully without it
+  // (RedisService already tolerates a missing server), so deployments that
+  // don't provision Redis must still boot.
+  @IsOptional()
   @IsString()
-  REDIS_HOST!: string;
+  REDIS_HOST?: string;
 
+  @IsOptional()
   @IsNumberString()
-  REDIS_PORT!: string;
+  REDIS_PORT?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): Record<string, unknown> {
