@@ -37,3 +37,11 @@ services:
       # Cloudflare R2 free tier) is wired via STORAGE_DRIVER=s3 + AWS_* vars.
       - key: STORAGE_DRIVER
         value: local
+
+  # Marketing site + privacy policy (Play Store requires the policy at a public URL).
+  - type: web
+    name: passpath-site
+    runtime: static
+    rootDir: apps/landing
+    buildCommand: ""
+    staticPublishPath: .
