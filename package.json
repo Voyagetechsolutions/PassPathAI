@@ -1,0 +1,13 @@
+{
+  "name": "passpath",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PassPath — AI-powered exam prep for South African Grade 8-12 learners. Root proxy scripts let platforms (Railway) build the API without a root-directory setting.",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "cd apps/backend && npm ci && npx prisma generate && npm run build",
+    "start": "cd apps/backend && npm start"
+  }
+}
