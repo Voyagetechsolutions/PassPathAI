@@ -15,7 +15,15 @@ The site's files live in `apps/backend/public/` — edit `index.html` there and
 push; the live site updates on the next deploy. No separate hosting, no second
 service to keep in sync.
 
-## Connecting your custom domain (~10 min)
+## Vercel (domain front)
+
+The repo also deploys on Vercel via `vercel.json`: Vercel publishes
+`apps/backend/public` as a static site (no build) and proxies `/api/*` and
+`/docs` through to the Railway backend. Attach your custom domain to the
+Vercel project and the whole site — pages **and** API — works on that domain.
+Nothing to configure in the Vercel dashboard; the file does it all.
+
+## Connecting your custom domain directly to Railway (alternative, ~10 min)
 
 1. Railway dashboard → the **passpathai** service → **Settings** → **Networking**
    → **Custom Domain** → enter your domain (e.g. `passpath.co.za`, and add
