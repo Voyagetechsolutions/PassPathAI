@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../src/lib/auth';
 import { apiRequest } from '../src/lib/api';
@@ -140,7 +140,16 @@ export default function CareerDetailScreen() {
           ) : null}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
             <Text style={[text.body, { color: colors.ink, fontFamily: 'Poppins_600SemiBold' }]}>{wiSubject}</Text>
-            <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand }}>{wiMark}%</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TextInput
+                value={String(wiMark)}
+                onChangeText={(v) => setWiMark(Math.min(100, Number(v.replace(/[^0-9]/g, '')) || 0))}
+                keyboardType="number-pad"
+                maxLength={3}
+                style={{ minWidth: 52, textAlign: 'center', borderWidth: 1, borderColor: colors.brand, borderRadius: radius.sm, paddingVertical: 5, paddingHorizontal: 8, fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand, backgroundColor: colors.white }}
+              />
+              <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand }}>%</Text>
+            </View>
           </View>
           <Slider value={wiMark} min={0} max={100} step={1} onChange={setWiMark} />
           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
@@ -206,9 +215,6 @@ export default function CareerDetailScreen() {
         </View>
       </View>
 
-      <Pressable onPress={() => router.push('/study')} style={({ pressed }) => [{ backgroundColor: colors.navy, borderRadius: radius.md, paddingVertical: 16, alignItems: 'center', marginTop: spacing.sm }, pressed && { opacity: 0.9 }]}>
-        <Text style={{ color: colors.white, fontSize: 16, fontFamily: 'Poppins_700Bold' }}>Create My Career Plan</Text>
-      </Pressable>
       <Text style={[text.caption, { textAlign: 'center' }]}>APS cut-offs are guidance estimates — confirm with each university.</Text>
     </Screen>
   );

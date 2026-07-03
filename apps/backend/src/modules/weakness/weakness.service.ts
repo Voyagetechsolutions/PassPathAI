@@ -36,7 +36,10 @@ export class WeaknessService {
       });
       const attempts = (existing?.attempts ?? 0) + r.attempts;
       const correct = (existing?.correct ?? 0) + r.correct;
-      const masteryScore = attempts > 0 ? correct / attempts : 0;
+      // Smoothed ratio (two virtual missed attempts): one lucky answer reads
+      // ~33%, not an instant 100% — full mastery is earned over volume.
+      const SMOOTHING = 2;
+      const masteryScore = attempts > 0 ? correct / (attempts + SMOOTHING) : 0;
       const weaknessScore = 1 - masteryScore;
 
       await this.prisma.topicMastery.upsert({

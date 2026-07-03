@@ -124,6 +124,35 @@ export default function StudyTab() {
         </Card>
       ) : null}
 
+      {/* Recommended — above the long topic list so it's actually seen */}
+      {continueTopic ? (
+        <View>
+          <Text style={[text.section, { marginBottom: spacing.md }]}>Recommended for You</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <Pressable onPress={() => openTopic(continueTopic.id, continueTopic.title)} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.8 }]}>
+              <View style={{ backgroundColor: colors.emerald50, borderRadius: radius.md, padding: spacing.md, minHeight: 120, justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 11, fontFamily: 'Poppins_700Bold', color: colors.emerald }}>WEAK AREA</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Poppins_600SemiBold', color: colors.ink, marginTop: 6 }} numberOfLines={2}>{continueTopic.title} revision</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
+                  <Bulb color={colors.emerald} size={16} />
+                  <Text style={text.caption}>Learn with your tutor</Text>
+                </View>
+              </View>
+            </Pressable>
+            <Pressable onPress={() => router.push({ pathname: '/practice', params: { topicId: continueTopic.id, topic: continueTopic.title, subjectName: selectedSubject?.name ?? '' } })} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.8 }]}>
+              <View style={{ backgroundColor: '#EDE9FE', borderRadius: radius.md, padding: spacing.md, minHeight: 120, justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 11, fontFamily: 'Poppins_700Bold', color: '#7C3AED' }}>PRACTICE</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Poppins_600SemiBold', color: colors.ink, marginTop: 6 }} numberOfLines={2}>{selectedSubject?.name} mixed questions</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
+                  <Target color={'#7C3AED'} size={16} />
+                  <Text style={text.caption}>Adaptive to you</Text>
+                </View>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {/* Topics */}
       <View>
         <Text style={[text.section, { marginBottom: spacing.md }]}>Topics{selectedSubject ? ` · ${selectedSubject.name}` : ''}</Text>
@@ -156,34 +185,6 @@ export default function StudyTab() {
         )}
       </View>
 
-      {/* Recommended */}
-      {continueTopic ? (
-        <View>
-          <Text style={[text.section, { marginBottom: spacing.md }]}>Recommended for You</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <Pressable onPress={() => openTopic(continueTopic.id, continueTopic.title)} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.8 }]}>
-              <View style={{ backgroundColor: colors.emerald50, borderRadius: radius.md, padding: spacing.md, minHeight: 120, justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, fontFamily: 'Poppins_700Bold', color: colors.emerald }}>WEAK AREA</Text>
-                <Text style={{ fontSize: 14, fontFamily: 'Poppins_600SemiBold', color: colors.ink, marginTop: 6 }} numberOfLines={2}>{continueTopic.title} revision</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
-                  <Bulb color={colors.emerald} size={16} />
-                  <Text style={text.caption}>Learn with your tutor</Text>
-                </View>
-              </View>
-            </Pressable>
-            <Pressable onPress={() => router.push({ pathname: '/practice', params: { topicId: continueTopic.id, topic: continueTopic.title, subjectName: selectedSubject?.name ?? '' } })} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.8 }]}>
-              <View style={{ backgroundColor: '#EDE9FE', borderRadius: radius.md, padding: spacing.md, minHeight: 120, justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, fontFamily: 'Poppins_700Bold', color: '#7C3AED' }}>PRACTICE</Text>
-                <Text style={{ fontSize: 14, fontFamily: 'Poppins_600SemiBold', color: colors.ink, marginTop: 6 }} numberOfLines={2}>{selectedSubject?.name} mixed questions</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
-                  <Target color={'#7C3AED'} size={16} />
-                  <Text style={text.caption}>Adaptive to you</Text>
-                </View>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
     </Screen>
   );
 }

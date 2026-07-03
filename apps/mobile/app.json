@@ -38,7 +38,7 @@
       "expo-web-browser"
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.8.124:3000/api",
+      "apiBaseUrl": "https://passpathai-production.up.railway.app/api",
       "firebase": {
         "apiKey": "AIzaSyCa9gVDjyQUnakTkR4Wnj9uiLLxS45u_uo",
         "authDomain": "passpath-6bb5e.firebaseapp.com",

@@ -99,6 +99,6 @@ export default (): AppConfig => ({
     secretKey: process.env.PAYSTACK_SECRET_KEY ?? '',
     publicKey: process.env.PAYSTACK_PUBLIC_KEY ?? '',
     planCode: process.env.PAYSTACK_PLAN_CODE ?? '',
-    monthlyAmountCents: parseInt(process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '15000', 10),
+    monthlyAmountCents: parseInt(process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '20000', 10),
   },
 });

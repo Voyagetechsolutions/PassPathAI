@@ -14,16 +14,21 @@ import type { CareerMatch, SubjectMark, ProfileSummary } from '../../src/lib/typ
 const GREEN = '#16A34A';
 const matchWord = (p: number) => (p >= 90 ? 'Excellent Match' : p >= 75 ? 'Strong Match' : p >= 55 ? 'Good Match' : 'Keep Building');
 
+// Last-loaded hub data survives tab switches so returning renders instantly
+// while a fresh copy loads quietly behind it.
+let hubCache: { marks: Record<string, string>; recs: CareerMatch[] } | null = null;
+
 export default function CareerTab() {
   const router = useRouter();
   const { token } = useAuth();
-  const [marks, setMarks] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<CareerMatch[] | null>(null);
-  const [aps, setAps] = useState<number>(0);
+  const [marks, setMarks] = useState<Record<string, string>>(hubCache?.marks ?? {});
+  const [results, setResults] = useState<CareerMatch[] | null>(hubCache?.recs ?? null);
+  const [aps, setAps] = useState<number>(hubCache?.recs[0]?.computedAps ?? 0);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hubCache === null);
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   // What-If state
   const [whatIfSubject, setWhatIfSubject] = useState<string | null>(null);
@@ -37,7 +42,9 @@ export default function CareerTab() {
           apiRequest<SubjectMark[]>('/profile/marks', { token }),
           apiRequest<CareerMatch[]>('/careers/recommended', { token }),
         ]);
-        setMarks(Object.fromEntries(stored.map((m) => [m.subjectName, String(m.mark)])));
+        const markMap = Object.fromEntries(stored.map((m) => [m.subjectName, String(m.mark)]));
+        hubCache = { marks: markMap, recs };
+        setMarks(markMap);
         setResults(recs);
         setAps(recs[0]?.computedAps ?? 0);
         if (stored.length === 0) setEditOpen(true);
@@ -79,6 +86,7 @@ export default function CareerTab() {
       const names = Object.keys(next);
       await apiRequest('/profile/marks', { method: 'PUT', token, body: { subjects: names.map((s) => ({ subjectName: s, mark: Number(next[s]) || 0 })) } });
       const recs = await apiRequest<CareerMatch[]>('/careers/recommended', { token });
+      hubCache = { marks: next, recs };
       setResults(recs);
       setAps(recs[0]?.computedAps ?? 0);
       setWhatIfSubject(null);
@@ -190,6 +198,40 @@ export default function CareerTab() {
             </ScrollView>
           </View>
 
+          {/* Find any career by name */}
+          <View>
+            <Text style={[text.section, { marginBottom: spacing.md }]}>Find a Career</Text>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="e.g. Doctor, Software, Lawyer…"
+              placeholderTextColor={colors.ink300}
+              style={{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15, color: colors.ink }}
+            />
+            {search.trim().length >= 2 ? (
+              <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+                {(results ?? [])
+                  .filter((c) => c.title.toLowerCase().includes(search.trim().toLowerCase()) || (c.faculty ?? '').toLowerCase().includes(search.trim().toLowerCase()))
+                  .slice(0, 6)
+                  .map((c) => (
+                    <Pressable key={c.careerId} onPress={() => { setSearch(''); router.push({ pathname: '/career-detail', params: { careerId: c.careerId } }); }} style={({ pressed }) => [{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md }, pressed && { opacity: 0.7 }]}>
+                      <Text style={{ fontSize: 22 }}>{careerEmoji(c.title, c.faculty)}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[text.body, { color: colors.ink, fontFamily: 'Poppins_600SemiBold' }]} numberOfLines={1}>{c.title}</Text>
+                        <Text style={text.caption} numberOfLines={1}>{c.faculty ?? ''} · {Math.round(c.admissionLikelihood * 100)}% match</Text>
+                      </View>
+                      <ChevronRight color={colors.ink300} size={18} />
+                    </Pressable>
+                  ))}
+                {(results ?? []).filter((c) => c.title.toLowerCase().includes(search.trim().toLowerCase()) || (c.faculty ?? '').toLowerCase().includes(search.trim().toLowerCase())).length === 0 ? (
+                  <Text style={[text.caption, { textAlign: 'center', paddingVertical: spacing.md }]}>
+                    Not in our database yet — we cover 100 careers and add more all the time. Ask your tutor about it in the meantime!
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
           {/* Universities you qualify for */}
           {unisForTop.length > 0 ? (
             <View>
@@ -246,7 +288,16 @@ export default function CareerTab() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                 <Text style={[text.body, { color: colors.ink, fontFamily: 'Poppins_600SemiBold' }]}>{whatIfSubject}</Text>
-                <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand }}>{whatIfMark}%</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <TextInput
+                    value={String(whatIfMark)}
+                    onChangeText={(v) => setWhatIfMark(Math.min(100, Number(v.replace(/[^0-9]/g, '')) || 0))}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={{ minWidth: 52, textAlign: 'center', borderWidth: 1, borderColor: colors.brand, borderRadius: radius.sm, paddingVertical: 5, paddingHorizontal: 8, fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand, backgroundColor: colors.white }}
+                  />
+                  <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: colors.brand }}>%</Text>
+                </View>
               </View>
               <Slider value={whatIfMark} min={0} max={100} step={1} onChange={setWhatIfMark} />
 

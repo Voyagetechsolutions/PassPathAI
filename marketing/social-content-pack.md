@@ -80,7 +80,7 @@ Slide 1: bold title on navy. Slides 2–6: one mistake per slide (source these f
 What APS is → how it's calculated (best 6 subjects) → the 7-point mark bands → what different unis need → how to raise it fastest → PassPath calculates yours live.
 
 **Carousel 3 — "Free vs Premium" (honest pricing post)**
-Slide 1: "What's actually free?" Slide 2: free list (all subjects, all 287 papers, careers+APS, calendar, 5 tutor messages + 1 mock). Slide 3: Premium R150/mo = unlimited tutor + unlimited marked mock exams. Slide 4: "R150/month. A private tutor charges that per HOUR."
+Slide 1: "What's actually free?" Slide 2: free list (all subjects, all 287 papers, careers+APS, calendar, 5 tutor messages + 1 mock). Slide 3: Premium R200/mo = unlimited tutor + unlimited marked mock exams. Slide 4: "R200/month. A private tutor charges that per HOUR."
 
 **Quote cards (fill gaps between posts):**
 - "You don't need to study harder. You need someone who explains it your way."
@@ -91,14 +91,14 @@ Slide 1: "What's actually free?" Slide 2: free list (all subjects, all 287 paper
 
 ## FACEBOOK (audience = PARENTS + teachers, not students)
 
-Different angle: parents pay the R150. Speak to outcomes, safety, price.
+Different angle: parents pay the R200. Speak to outcomes, safety, price.
 
 **Post 1 — for parents:**
 "Private tutors in SA charge R200–R400 per hour. Most families can't do that every week.
 
 PassPath is a study app for Grade 8–12 learners with a real AI tutor that teaches every CAPS subject in a conversation — it explains, checks understanding, and adapts to how your child learns. It includes every recent DBE past paper with memos, mock exams that get marked with feedback, and career guidance based on your child's actual marks.
 
-The free version includes all the past papers. The full version is R150 a month — cancel anytime.
+The free version includes all the past papers. The full version is R200 a month — cancel anytime.
 
 Built in South Africa. Early access: passpath-site.onrender.com"
 

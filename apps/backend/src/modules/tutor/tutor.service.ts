@@ -223,8 +223,10 @@ export class TutorService {
       update: { understandingScore: score, ratedAt: new Date() },
     });
 
-    // A confident explanation is real evidence of mastery; feed the weakness engine.
-    await this.weakness.recordResults(sid, [{ topicId, attempts: 1, correct: score >= 6 ? 1 : 0 }], 'tutor');
+    // A teach-back is 10 units of evidence, credited proportionally: 3/10 nudges
+    // the topic bar toward ~30% instead of registering as a flat fail — students
+    // see their learning move even before they're strong.
+    await this.weakness.recordResults(sid, [{ topicId, attempts: 10, correct: score }], 'tutor');
 
     // Grow the tutor's memory of what this learner still needs.
     if (gaps.length > 0) {
