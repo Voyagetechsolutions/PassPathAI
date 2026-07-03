@@ -4,7 +4,7 @@
     {
       "name": "landing",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "apps/landing", "-p", "4321"],
+      "runtimeArgs": ["--yes", "http-server", "apps/backend/public", "-p", "4321", "-c-1"],
       "port": 4321
     }
   ]

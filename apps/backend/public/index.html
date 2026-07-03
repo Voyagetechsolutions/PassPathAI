@@ -11,6 +11,7 @@
 <meta property="og:title" content="PassPath — Your Path to Exam Success" />
 <meta property="og:description" content="A tutor that teaches in a real conversation. Real DBE past papers. Built in South Africa for CAPS learners, Grades 8–12." />
 <meta property="og:type" content="website" />
+<meta property="og:image" content="https://passpathai-production.up.railway.app/logo-mark.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,11 +92,19 @@
   .hero-ctas .btn { padding: 14px 24px; font-size: 15px; }
   .hero-note { font-size: 13px; color: var(--ink-400); }
 
-  /* Hero visual: the tutor chat, as it works in the app */
-  .phone {
-    background: var(--white); border-radius: 24px; box-shadow: var(--shadow);
-    border: 1px solid var(--line); padding: 20px; max-width: 340px; margin: 0 auto;
+  /* Hero visual: real student photo with the tutor chat overlapping it */
+  .hero-visual { position: relative; max-width: 420px; margin: 0 auto; padding-bottom: 48px; }
+  .hero-photo {
+    width: 100%; height: auto; border-radius: 24px;
+    box-shadow: var(--shadow); border: 1px solid var(--line);
   }
+  .phone {
+    background: var(--white); border-radius: 24px; box-shadow: 0 14px 40px rgba(11, 37, 69, 0.16);
+    border: 1px solid var(--line); padding: 16px; max-width: 300px; margin: 0 auto;
+  }
+  .hero-visual .phone { position: absolute; left: -44px; bottom: 0; max-width: 262px; }
+  /* Keep the overlay card compact on desktop; the full chat shows on mobile */
+  @media (min-width: 861px) { .hero-visual .bubble-more { display: none; } }
   .phone-header { display: flex; align-items: center; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid var(--line); margin-bottom: 13px; }
   .phone-header img { width: 32px; height: 32px; }
   .phone-title { font-size: 13px; font-weight: 700; color: var(--navy); }
@@ -171,6 +180,8 @@
     .cta-banner h2 { font-size: 22px; }
     .hero-logo img { width: 52px; height: 52px; }
     .hero-logo .lockup-name { font-size: 24px; }
+    .hero-visual { max-width: 340px; padding-bottom: 0; }
+    .hero-visual .phone { position: relative; left: 0; bottom: 0; margin: -72px auto 0; }
   }
 </style>
 </head>
@@ -216,21 +227,24 @@
     </div>
 
     <div>
-      <div class="phone">
-        <div class="phone-header">
-          <img src="logo-mark.png" alt="" />
-          <div>
-            <div class="phone-title">Physical Sciences · Newton's Laws</div>
-            <div class="phone-sub">Your tutor</div>
+      <div class="hero-visual">
+        <img class="hero-photo" src="hero-student.webp" alt="A South African high-school learner studying with PassPath on her phone" width="896" height="1200" />
+        <div class="phone">
+          <div class="phone-header">
+            <img src="logo-mark.png" alt="" />
+            <div>
+              <div class="phone-title">Physical Sciences · Newton's Laws</div>
+              <div class="phone-sub">Your tutor</div>
+            </div>
           </div>
-        </div>
-        <div class="bubble bot">Right — Newton's Second Law. Want me to start with the formula, or with an example you'd see every day?</div>
-        <div class="bubble me">Example please</div>
-        <div class="bubble bot">Picture pushing an empty shopping trolley — it speeds up easily. Now the same push with a full trolley... barely moves. Same force, more mass, less acceleration. That's F = ma. Make sense so far?</div>
-        <div class="chip-row">
-          <span class="chip">Explain like I'm 5</span>
-          <span class="chip">Tell it as a story</span>
-          <span class="chip">Real-world example</span>
+          <div class="bubble bot">Right — Newton's Second Law. Want me to start with the formula, or with an example you'd see every day?</div>
+          <div class="bubble me">Example please</div>
+          <div class="bubble bot bubble-more">Push an empty trolley — it flies. Same push, full trolley — barely moves. More mass, less acceleration. That's F = ma. Following?</div>
+          <div class="chip-row">
+            <span class="chip">Explain like I'm 5</span>
+            <span class="chip">Tell it as a story</span>
+            <span class="chip">Real-world example</span>
+          </div>
         </div>
       </div>
       <p class="phone-caption">This is how the tutor actually works — one small idea at a time, and it checks you're following.</p>
