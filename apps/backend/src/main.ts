@@ -1,7 +1,9 @@
 import 'reflect-metadata';
+import { join } from 'node:path';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -11,7 +13,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 async function bootstrap(): Promise<void> {
   // rawBody: true keeps the exact request bytes on req.rawBody, needed to verify
   // the Paystack webhook HMAC signature (a re-serialized JSON body wouldn't match).
-  const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false, rawBody: true });
   const config = app.get(ConfigService<AppConfig, true>);
 
   const apiPrefix = config.get('apiPrefix', { infer: true });
@@ -20,6 +22,9 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(apiPrefix);
   app.use(helmet());
+  // One deployment, one domain: the marketing site (public/) is served at /,
+  // the API stays under /api. Registered after helmet so pages get its headers.
+  app.useStaticAssets(join(__dirname, '..', 'public'));
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : true,
     credentials: true,

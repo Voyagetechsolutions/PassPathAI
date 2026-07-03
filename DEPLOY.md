@@ -1,76 +1,59 @@
-# Deploying PassPath (free tier, no card needed)
+# Deploying PassPath
 
-Everything below is free. Total time: ~20 minutes. The repo is already committed
-and deployment-ready — `render.yaml` describes both services (API + landing site).
+Production runs on **Railway** as ONE service: the website and the API are the
+same deployment. Every push to `main` on GitHub redeploys automatically.
 
-## 1. Push the repo to GitHub (~5 min)
+| What | URL |
+|---|---|
+| Website (landing page) | `https://passpathai-production.up.railway.app/` |
+| Privacy policy (Play Store needs this) | `https://passpathai-production.up.railway.app/privacy.html` |
+| API | `https://passpathai-production.up.railway.app/api` |
+| API health check | `https://passpathai-production.up.railway.app/api/health` |
+| API docs (Swagger) | `https://passpathai-production.up.railway.app/docs` |
 
-You need a GitHub account (free — github.com/signup). Then, in a terminal:
+The site's files live in `apps/backend/public/` — edit `index.html` there and
+push; the live site updates on the next deploy. No separate hosting, no second
+service to keep in sync.
 
-```bash
-cd C:\Users\Mthokozisi.DESKTOP-DPOBCC1\Documents\PassPath
-gh auth login          # choose GitHub.com → HTTPS → login with browser
-gh repo create passpath --private --source . --push
-```
+## Connecting your custom domain (~10 min)
 
-No `gh`? Create an empty **private** repo called `passpath` on github.com, then:
+1. Railway dashboard → the **passpathai** service → **Settings** → **Networking**
+   → **Custom Domain** → enter your domain (e.g. `passpath.co.za`, and add
+   `www.passpath.co.za` too).
+2. Railway shows a **CNAME** value. At your domain registrar, add a CNAME record
+   pointing your domain at that value. (For a root/apex domain, use the
+   registrar's ALIAS/ANAME/CNAME-flattening option, or put the site on `www`
+   and redirect the apex.)
+3. Wait for DNS (minutes to a few hours). Railway issues the HTTPS certificate
+   automatically.
+4. After the domain is live, do a find-and-replace of
+   `passpathai-production.up.railway.app` → your domain in:
+   - `apps/mobile/app.json` (`apiBaseUrl`)
+   - `marketing/social-content-pack.md`
+   The old Railway URL keeps working either way.
 
-```bash
-git remote add origin https://github.com/<your-username>/passpath.git
-git push -u origin main
-```
+## Env vars (already set on Railway)
 
-## 2. Deploy on Render (~10 min)
+`DATABASE_URL`, `DIRECT_URL`, `OPENAI_API_KEY`, `FIREBASE_PROJECT_ID`,
+`FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `NODE_ENV=production`.
 
-1. Sign up free at https://render.com (use "Sign in with GitHub" — no card asked).
-2. Click **New +** → **Blueprint** → select your `passpath` repo.
-3. Render reads `render.yaml` and shows two services: **passpath-api** and
-   **passpath-site**. Before clicking Apply, it asks for the secret env vars.
-   Copy each value from `apps/backend/.env` on this machine:
+Set later when ready:
+- `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` — from your Paystack dashboard.
+  Webhook URL: `https://<your-domain>/api/subscription/webhook`.
+- `PAYSTACK_MONTHLY_AMOUNT_CENTS` — defaults to `20000` (R200/month) in code.
 
-   | Env var | Where to find the value |
-   |---|---|
-   | `DATABASE_URL` | `apps/backend/.env` |
-   | `DIRECT_URL` | `apps/backend/.env` |
-   | `OPENAI_API_KEY` | `apps/backend/.env` |
-   | `FIREBASE_PROJECT_ID` | `"project_id"` in `apps/backend/firebase-admin.json` |
-   | `FIREBASE_CLIENT_EMAIL` | `"client_email"` in `firebase-admin.json` |
-   | `FIREBASE_PRIVATE_KEY` | `"private_key"` in `firebase-admin.json` — paste the whole value including `-----BEGIN PRIVATE KEY-----` |
-   | `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` | leave blank until you create a Paystack account |
+## Still pending
 
-4. Click **Apply**. First build takes ~5 minutes. You'll get two URLs like:
-   - API: `https://passpath-api.onrender.com`
-   - Site: `https://passpath-site.onrender.com`
-
-5. Verify: open `https://passpath-api.onrender.com/api/health` → should return OK.
-   (First hit after idle takes ~50s — free tier wakes from sleep.)
-
-## 3. Point the app at the deployed API (~2 min)
-
-In `apps/mobile/app.json`, change:
-
-```json
-"apiBaseUrl": "https://passpath-api.onrender.com/api"
-```
-
-(Ask Claude to do this + verify once your URL exists.)
-
-## 4. Later, when ready
-
-- **Paystack**: create the free account, put the test keys into Render's env vars,
-  and set the webhook URL to `https://passpath-api.onrender.com/api/subscription/webhook`.
-- **Privacy policy URL for Play Store**: `https://passpath-site.onrender.com/privacy.html`.
-- **Past-paper downloads on the server**: the 590MB of PDFs live only on this
-  machine. To serve them from the cloud, create a free Cloudflare R2 bucket
-  (10GB free), upload `apps/backend/storage/`, and set `STORAGE_DRIVER=s3` +
-  the `AWS_*` vars on Render (the code already supports S3-compatible storage).
-  Until then, everything except the PDF *downloads* works — the AI content is
+- **Past-paper PDF downloads**: the 590MB of PDFs live only on the dev machine.
+  To serve them from the cloud, create a free Cloudflare R2 bucket (10GB free),
+  upload `apps/backend/storage/`, and set `STORAGE_DRIVER=s3` + the `AWS_*`
+  vars. Everything except the PDF *downloads* already works — the AI content is
   in the database, not the PDFs.
+- **Neon database** is at its 512MB free cap — subscription tables + the last
+  1.3% of AI embeddings are blocked until that's resolved (Neon paid tier, or a
+  new project + data migration).
 
-## Known free-tier limits
+## Backup option
 
-- API sleeps after ~15 min idle; next request takes ~50s. Acceptable for early
-  access; upgrade when users complain.
-- Neon database is at its 512MB free cap — subscription tables + the last 1.3%
-  of AI embeddings are blocked until that's resolved (Neon paid tier, or a new
-  project + data migration).
+`render.yaml` still describes an equivalent single-service deploy on Render's
+free tier if Railway ever needs replacing.

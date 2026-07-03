@@ -4,7 +4,7 @@ Ready-to-post content for TikTok, Instagram, Facebook and WhatsApp.
 Every claim in here is true of the app today. CTA everywhere is the early-access
 site (the app isn't on the Play Store yet — don't say "download now"):
 
-> **CTA:** Early access → passpath-site.onrender.com (link in bio)
+> **CTA:** Early access → passpathai-production.up.railway.app (link in bio)
 
 Brand voice: a smart older sibling, not a corporation. SA-specific, plain
 English, no fake hype. Colors for graphics: navy #0B2545, green #16A34A,
@@ -100,7 +100,7 @@ PassPath is a study app for Grade 8–12 learners with a real AI tutor that teac
 
 The free version includes all the past papers. The full version is R200 a month — cancel anytime.
 
-Built in South Africa. Early access: passpath-site.onrender.com"
+Built in South Africa. Early access: passpathai-production.up.railway.app"
 
 **Post 2 — for teachers:**
 "Teachers: PassPath gives your learners the DBE past papers + memos for all 14 Grade 12 subjects in one free app, plus an AI tutor for the questions you don't have time to answer 31 times. If you'd like early access for your class, email us — free for your learners to start."
@@ -121,10 +121,10 @@ Time these to the school calendar: June exams, trials (Sept), finals (Oct–Nov)
 4. "Your APS = your best 6 subjects. Do you know yours? The app calculates it live."
 
 **Broadcast message (for your contact list / early users):**
-"Hey 👋 I built a study app for matric — AI tutor that actually explains, all the DBE past papers with memos, and it shows which universities your marks qualify you for. Free to start. If you know a Grade 8–12 learner, send them this: passpath-site.onrender.com 🙏"
+"Hey 👋 I built a study app for matric — AI tutor that actually explains, all the DBE past papers with memos, and it shows which universities your marks qualify you for. Free to start. If you know a Grade 8–12 learner, send them this: passpathai-production.up.railway.app 🙏"
 
 **Share-to-group template (put this INSIDE the app later as a share button):**
-"📚 Found an app with ALL the DBE past papers + memos free, and an AI tutor that explains until you get it. passpath-site.onrender.com"
+"📚 Found an app with ALL the DBE past papers + memos free, and an AI tutor that explains until you get it. passpathai-production.up.railway.app"
 
 **WhatsApp Channel idea:** start a "PassPath Daily" channel — one past-paper question every morning at 6am, answer at 8pm. Zero cost, builds a daily habit that mirrors the app's streak loop.
 

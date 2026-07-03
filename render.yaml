@@ -1,5 +1,6 @@
-# Render Blueprint — deploys the PassPath API on Render's free tier.
-# In the Render dashboard: New + → Blueprint → connect this repo → it reads this file.
+# Render Blueprint — backup deploy option (production runs on Railway, see DEPLOY.md).
+# The API serves the marketing site itself from apps/backend/public at /, so one
+# web service covers both the website and the API.
 # Free-tier note: the service sleeps after ~15 min idle and takes ~50s to wake on
 # the next request. Fine for early access; upgrade the plan when users grow.
 services:
@@ -39,11 +40,3 @@ services:
       # Cloudflare R2 free tier) is wired via STORAGE_DRIVER=s3 + AWS_* vars.
       - key: STORAGE_DRIVER
         value: local
-
-  # Marketing site + privacy policy (Play Store requires the policy at a public URL).
-  - type: web
-    name: passpath-site
-    runtime: static
-    rootDir: apps/landing
-    buildCommand: ""
-    staticPublishPath: .
