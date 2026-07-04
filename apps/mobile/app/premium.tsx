@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../src/lib/auth';
@@ -12,6 +12,13 @@ import { colors, radius, spacing, text } from '../src/theme';
 import type { SubscriptionStatus } from '../src/lib/types';
 
 const CALLBACK_URL = 'passpath://payment-callback';
+
+/**
+ * Google Play policy: digital subscriptions sold inside an Android app must use
+ * Play Billing. Ours is sold on the website (Paystack), so the Android build
+ * shows no purchase flow — Premium simply unlocks once the account is upgraded.
+ */
+const CAN_PURCHASE_IN_APP = Platform.OS !== 'android';
 
 const FEATURES = [
   { icon: Bulb, title: 'Unlimited AI tutor chat', body: 'Real back-and-forth conversations that teach every topic — no message limits.' },
@@ -116,7 +123,7 @@ export default function PremiumScreen() {
         ) : (
           <Text style={[text.caption, { textAlign: 'center' }]}>Your subscription is set to cancel — you’ll keep Premium until the date above.</Text>
         )
-      ) : (
+      ) : CAN_PURCHASE_IN_APP ? (
         <Pressable
           onPress={subscribe}
           disabled={busy}
@@ -125,8 +132,19 @@ export default function PremiumScreen() {
           {busy ? <ActivityIndicator color={colors.white} /> : null}
           <Text style={{ color: colors.white, fontSize: 16, fontFamily: 'Poppins_700Bold' }}>{busy ? 'Opening secure checkout…' : `Subscribe — ${status?.priceLabel ?? 'R200/month'}`}</Text>
         </Pressable>
+      ) : (
+        <Card>
+          <Text style={[text.body, { color: colors.ink, fontFamily: 'Poppins_600SemiBold', textAlign: 'center' }]}>
+            Premium can’t be purchased inside the app.
+          </Text>
+          <Text style={[text.caption, { textAlign: 'center', marginTop: 6 }]}>
+            Once your account is upgraded, Premium unlocks here automatically.
+          </Text>
+        </Card>
       )}
-      <Text style={[text.caption, { textAlign: 'center' }]}>Secure checkout via Paystack. Cancel any time — no lock-in.</Text>
+      {CAN_PURCHASE_IN_APP || status?.isPremium ? (
+        <Text style={[text.caption, { textAlign: 'center' }]}>Secure checkout via Paystack. Cancel any time — no lock-in.</Text>
+      ) : null}
     </Screen>
   );
 }
