@@ -108,5 +108,5 @@ access before launch gets in free. [One feature demo in 5 seconds.] Link in bio.
 | Launch week | Countdown daily + "we're live" on 1 Aug |
 
 Post 6–8pm SAST (after homework, before sleep). Reply to every comment —
-replies are free reach. Bio link: https://passpathai-production.up.railway.app
+replies are free reach. Bio link: https://www.passpathai.com
 (swap for your domain when live).

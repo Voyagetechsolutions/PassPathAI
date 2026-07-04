@@ -47,10 +47,7 @@ async function alreadyUploaded(key: string, size: number): Promise<boolean> {
 
 async function main(): Promise<void> {
   const papers = await prisma.pastPaper.findMany({ select: { storageKey: true } });
-  const docs = await prisma.curriculumDocument.findMany({
-    select: { storageKey: true },
-    where: { storageKey: { not: null } },
-  });
+  const docs = await prisma.curriculumDocument.findMany({ select: { storageKey: true } });
   const keys = [...new Set([...papers.map((p) => p.storageKey), ...docs.map((d) => d.storageKey)])].filter(
     (k): k is string => Boolean(k),
   );

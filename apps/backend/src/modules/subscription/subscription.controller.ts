@@ -18,6 +18,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { PaystackService } from '../../infra/paystack/paystack.service';
+import { StripeService } from '../../infra/stripe/stripe.service';
 import { SubscriptionService } from './subscription.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import type { PaystackWebhookEvent } from './paystack-webhook-event';
@@ -30,6 +31,7 @@ export class SubscriptionController {
   constructor(
     private readonly subscriptions: SubscriptionService,
     private readonly paystack: PaystackService,
+    private readonly stripe: StripeService,
   ) {}
 
   @Get('me')
@@ -73,6 +75,23 @@ export class SubscriptionController {
     }
     const event = JSON.parse(req.rawBody.toString('utf8')) as PaystackWebhookEvent;
     await this.subscriptions.handleWebhook(event);
+    return { received: true };
+  }
+
+  /**
+   * Stripe calls this directly — @Public(), trust comes from the stripe-signature
+   * HMAC verified against the raw request bytes.
+   */
+  @Post('stripe-webhook')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Stripe webhook — verified via signature, not auth' })
+  async stripeWebhook(@Req() req: RawBodyRequest<Request>, @Headers('stripe-signature') signature?: string) {
+    const event = req.rawBody ? this.stripe.parseWebhook(req.rawBody, signature) : null;
+    if (!event) {
+      throw new BadRequestException('Invalid signature');
+    }
+    await this.subscriptions.handleStripeEvent(event);
     return { received: true };
   }
 }

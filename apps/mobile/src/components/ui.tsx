@@ -1,6 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -270,6 +271,41 @@ export function ListRow({
     </Pressable>
   ) : (
     content
+  );
+}
+
+/**
+ * Pulsing placeholder block. Compose a few of these in the shape of the real
+ * screen so first loads feel structured instead of blank-with-spinner.
+ */
+export function Skeleton({ height = 16, width, radius: r = 10, style }: { height?: number; width?: number | `${number}%`; radius?: number; style?: ViewStyle }) {
+  const pulse = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 650, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.45, duration: 650, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  return (
+    <Animated.View
+      style={[{ height, width: width ?? '100%', borderRadius: r, backgroundColor: colors.line, opacity: pulse }, style]}
+    />
+  );
+}
+
+/** A card-shaped skeleton: title line + a few body lines. */
+export function SkeletonCard({ lines = 3 }: { lines?: number }) {
+  return (
+    <View style={[styles.card, { gap: spacing.md }]}>
+      <Skeleton height={18} width="55%" />
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} height={13} width={i === lines - 1 ? '70%' : '100%'} />
+      ))}
+    </View>
   );
 }
 

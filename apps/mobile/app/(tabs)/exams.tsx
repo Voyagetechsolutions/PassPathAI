@@ -5,7 +5,7 @@ import { useApi } from '../../src/lib/use-api';
 import { useAuth } from '../../src/lib/auth';
 import { apiRequest } from '../../src/lib/api';
 import { Screen } from '../../src/components/screen';
-import { Card, ProgressBar, LineChart, Loading, EmptyState, ErrorText } from '../../src/components/ui';
+import { Card, ProgressBar, LineChart, SkeletonCard, EmptyState, ErrorText } from '../../src/components/ui';
 import { Clock, GradCap, Book, Timer, Target, ChevronRight } from '../../src/components/icons';
 import { colors, radius, spacing, text } from '../../src/theme';
 import type { CountdownView, ProfileSummary, PastPaper, PredictionPoint, SubjectTree } from '../../src/lib/types';
@@ -63,7 +63,14 @@ export default function ExamsTab() {
     }
   }
 
-  if (loading) return <Screen><Loading label="Loading exam centre…" /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={4} />
+        <SkeletonCard lines={3} />
+      </Screen>
+    );
 
   return (
     <Screen>

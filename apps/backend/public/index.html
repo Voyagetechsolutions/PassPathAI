@@ -11,7 +11,7 @@
 <meta property="og:title" content="PassPath — Your Path to Exam Success" />
 <meta property="og:description" content="A tutor that teaches in a real conversation. Real DBE past papers. Built in South Africa for CAPS learners, Grades 8–12." />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://passpathai-production.up.railway.app/logo-mark.png" />
+<meta property="og:image" content="https://www.passpathai.com/logo-mark.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -153,6 +153,30 @@
   .price-list li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
   .price-card .btn { width: 100%; }
   .price-note { text-align: center; font-size: 13px; color: var(--ink-400); margin-top: 22px; }
+
+  /* App screenshots */
+  .screens-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .screens-grid img { width: 100%; height: auto; border-radius: 18px; box-shadow: var(--shadow); }
+  @media (max-width: 860px) { .screens-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Waitlist form */
+  .signup-form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; max-width: 560px; margin: 0 auto 14px; }
+  .signup-form input, .signup-form select {
+    font-family: inherit; font-size: 14.5px; border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1); color: white; border-radius: 12px; padding: 13px 16px;
+  }
+  .signup-form input { flex: 1; min-width: 220px; }
+  .signup-form input::placeholder { color: rgba(255,255,255,0.55); }
+  .signup-form select { color: white; }
+  .signup-form select option { color: var(--ink); }
+  .signup-msg { font-size: 14px; margin-bottom: 12px; display: none; }
+  .signup-msg.ok { color: #7CE2A8; display: block; }
+  .signup-msg.err { color: #FCA5A5; display: block; }
+  .play-chip {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+    border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 8px 16px;
+    font-size: 13px; color: rgba(255,255,255,0.85);
+  }
 
   /* Launch countdown */
   .cd-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7CE2A8; margin-bottom: 14px; }
@@ -331,6 +355,21 @@
   </div>
 </section>
 
+<section id="screens">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>See it in action</h2>
+      <p>Real screens from the app — the dashboard, the tutor mid-lesson, an honest score, and your career match.</p>
+    </div>
+    <div class="screens-grid">
+      <img src="screens/home.webp" alt="PassPath home dashboard with exam countdown and readiness score" width="360" height="640" />
+      <img src="screens/tutor.webp" alt="The AI tutor teaching bookkeeping as a story" width="360" height="640" />
+      <img src="screens/score.webp" alt="Explain-it-back scoring a student's answer 3 out of 10 with feedback" width="360" height="640" />
+      <img src="screens/career.webp" alt="Career Hub showing a 100 percent career match" width="360" height="640" />
+    </div>
+  </div>
+</section>
+
 <section id="pricing">
   <div class="wrap">
     <div class="section-head">
@@ -380,8 +419,21 @@
         <div class="cd-cell"><b id="cd-mins">–</b><span>Mins</span></div>
         <div class="cd-cell"><b id="cd-secs">–</b><span>Secs</span></div>
       </div>
-      <p>Can't wait? We're letting learners in gradually while we finish polishing. Send us an email with your grade and subjects, and we'll get you set up early.</p>
-      <a class="btn btn-primary" href="mailto:mthokochaza@gmail.com?subject=PassPath%20Early%20Access&body=Hi%0A%0AI%27d%20like%20early%20access%20to%20PassPath.%0A%0AMy%20grade%3A%20%0AMy%20subjects%3A%20" style="padding:15px 30px;font-size:15px;">Email us for access</a>
+      <p>Can't wait? Join the early-access list and we'll let you in before launch day.</p>
+      <form class="signup-form" id="signup-form">
+        <input type="email" id="signup-email" placeholder="your@email.com" required autocomplete="email" />
+        <select id="signup-grade" aria-label="Your grade">
+          <option value="">Grade…</option>
+          <option value="8">Grade 8</option>
+          <option value="9">Grade 9</option>
+          <option value="10">Grade 10</option>
+          <option value="11">Grade 11</option>
+          <option value="12">Grade 12 (matric)</option>
+        </select>
+        <button class="btn btn-primary" type="submit" id="signup-btn">Get early access</button>
+      </form>
+      <div class="signup-msg" id="signup-msg"></div>
+      <div class="play-chip">▶ Coming to Google Play · 1 August 2026</div>
     </div>
   </div>
 </section>
@@ -400,5 +452,6 @@
 </footer>
 
 <script src="countdown.js"></script>
+<script src="signup.js"></script>
 </body>
 </html>

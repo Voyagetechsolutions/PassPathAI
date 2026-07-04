@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../src/lib/auth';
 import { apiRequest } from '../src/lib/api';
 import { useApi } from '../src/lib/use-api';
+import { syncExamReminders } from '../src/lib/notifications';
 import { Screen } from '../src/components/screen';
 import { Card, IconChip } from '../src/components/ui';
 import { Book, Clock, ChevronRight, Check } from '../src/components/icons';
@@ -35,6 +36,9 @@ export default function CalendarScreen() {
     try {
       const d = await apiRequest<CalendarMonth>(`/calendar?month=${monthParam}`, { token });
       setData(d);
+      // Feed exam dates into the local exam-countdown reminders (quiet no-op
+      // when reminders are off).
+      void syncExamReminders(d.exams.map((e) => ({ title: e.title, date: e.date }))).catch(() => {});
     } catch {
       setData({ month: monthParam, learned: [], exams: [] });
     } finally {
@@ -62,7 +66,11 @@ export default function CalendarScreen() {
 
   async function removeExam(id: string) {
     try {
+      const exam = data?.exams.find((e) => e.id === id);
       await apiRequest(`/calendar/exams/${id}`, { method: 'DELETE', token });
+      if (exam) {
+        void syncExamReminders([], { title: exam.title, date: exam.date }).catch(() => {});
+      }
       await load();
     } catch { /* ignore */ }
   }

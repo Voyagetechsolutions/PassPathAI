@@ -97,7 +97,7 @@
       card(s.revenue.activeSubscriptions, 'Active subscriptions', true) +
       card('R' + s.revenue.estimatedMrr, 'Monthly revenue (est.)', true) +
       card(s.revenue.priceLabel, 'Premium price') +
-      card(s.revenue.paystackConfigured ? 'Connected' : 'Not set up', 'Paystack');
+      card(s.revenue.paystackConfigured ? 'Connected' : 'Not set up', esc(s.revenue.billingProvider || 'Billing'));
     $('system-cards').innerHTML =
       card(s.content.subjects, 'Subjects') +
       card(s.content.pastPapers, 'Past papers') +

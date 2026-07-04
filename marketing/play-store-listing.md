@@ -26,8 +26,8 @@ Everything to copy-paste into the Google Play Console. Work top to bottom.
 | Free or paid | Free |
 | Category | Education |
 | Email | mthokochaza@gmail.com |
-| Website | https://passpathai-production.up.railway.app (or your domain) |
-| Privacy policy URL | https://passpathai-production.up.railway.app/privacy.html |
+| Website | https://www.passpathai.com (or your domain) |
+| Privacy policy URL | https://www.passpathai.com/privacy.html |
 
 ## 2. Short description (max 80 chars)
 

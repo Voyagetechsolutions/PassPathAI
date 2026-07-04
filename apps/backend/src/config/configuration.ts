@@ -50,6 +50,14 @@ export interface AppConfig {
     // and PaystackService auto-creates the plan on first use.
     monthlyAmountCents: number;
   };
+  // Stripe is the active billing provider when STRIPE_SECRET_KEY is set;
+  // otherwise the service falls back to Paystack.
+  stripe: {
+    secretKey: string;
+    webhookSecret: string;
+    priceId: string;
+    monthlyAmountCents: number;
+  };
 }
 
 const splitCsv = (value?: string): string[] =>
@@ -118,5 +126,14 @@ export default (): AppConfig => ({
     publicKey: process.env.PAYSTACK_PUBLIC_KEY ?? '',
     planCode: process.env.PAYSTACK_PLAN_CODE ?? '',
     monthlyAmountCents: parseInt(process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '20000', 10),
+  },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+    priceId: process.env.STRIPE_PRICE_ID ?? '',
+    monthlyAmountCents: parseInt(
+      process.env.PREMIUM_PRICE_CENTS ?? process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '20000',
+      10,
+    ),
   },
 });

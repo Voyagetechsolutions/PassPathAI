@@ -5,7 +5,7 @@ import { useAuth } from '../src/lib/auth';
 import { apiRequest } from '../src/lib/api';
 import { useApi } from '../src/lib/use-api';
 import { Screen } from '../src/components/screen';
-import { Card, ProgressBar, Slider, Loading, ErrorText } from '../src/components/ui';
+import { Card, ProgressBar, Slider, SkeletonCard, ErrorText } from '../src/components/ui';
 import { Check, Target, TrendUp } from '../src/components/icons';
 import { careerEmoji, computeAps, factsFor } from '../src/lib/careers';
 import { colors, radius, spacing, text } from '../src/theme';
@@ -54,7 +54,15 @@ export default function CareerDetailScreen() {
     return { newAps, progsNow, progsNew };
   }, [wiSubject, wiMark, marks, career, aps]);
 
-  if (loading) return <Screen onBack={() => router.back()}><Loading label="Opening the prospectus…" /></Screen>;
+  if (loading)
+    return (
+      <Screen onBack={() => router.back()}>
+        <SkeletonCard lines={4} />
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={3} />
+      </Screen>
+    );
   if (error || !career) return <Screen onBack={() => router.back()}><ErrorText message={error ?? 'Career not found.'} /></Screen>;
 
   const facts = factsFor(career.faculty);

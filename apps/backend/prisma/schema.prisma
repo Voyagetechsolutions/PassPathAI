@@ -183,6 +183,17 @@ model SubscriptionPayment {
   @@map("subscription_payments")
 }
 
+/// Marketing-site waitlist signups (pre-launch early access). No relation to
+/// User — most signups won't have accounts yet.
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  grade     Int?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_signups")
+}
+
 /// An exam date the student adds themselves, shown on their calendar. Distinct from
 /// ImportantDate (which holds shared/national dates managed by admins).
 model StudentExamDate {

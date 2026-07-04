@@ -129,6 +129,10 @@ export class AdminService {
     const openai = this.config.get('openai', { infer: true });
     const freeTrial = this.config.get('freeTrial', { infer: true });
     const paystack = this.config.get('paystack', { infer: true });
+    const stripe = this.config.get('stripe', { infer: true });
+    const billing = stripe.secretKey
+      ? { provider: 'Stripe', amountCents: stripe.monthlyAmountCents, configured: true }
+      : { provider: 'Paystack', amountCents: paystack.monthlyAmountCents, configured: Boolean(paystack.secretKey) };
 
     return {
       content: { subjects, questions, lessons, careers, pastPapers },
@@ -148,9 +152,10 @@ export class AdminService {
       },
       revenue: {
         activeSubscriptions,
-        priceLabel: `R${(paystack.monthlyAmountCents / 100).toFixed(0)}/month`,
-        estimatedMrr: Math.round((activeSubscriptions * paystack.monthlyAmountCents) / 100),
-        paystackConfigured: Boolean(paystack.secretKey),
+        priceLabel: `R${(billing.amountCents / 100).toFixed(0)}/month`,
+        estimatedMrr: Math.round((activeSubscriptions * billing.amountCents) / 100),
+        paystackConfigured: billing.configured,
+        billingProvider: billing.provider,
       },
       system: {
         dbSizeMb,

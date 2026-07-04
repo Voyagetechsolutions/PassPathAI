@@ -10,6 +10,7 @@ import { RedisModule } from './infra/redis/redis.module';
 import { FirebaseModule } from './infra/firebase/firebase.module';
 import { StorageModule } from './infra/storage/storage.module';
 import { OpenAiModule } from './infra/openai/openai.module';
+import { StripeModule } from './infra/stripe/stripe.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { FirebaseAuthGuard } from './modules/auth/guards/firebase-auth.guard';
@@ -33,6 +34,7 @@ import { ParentModule } from './modules/parent/parent.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PastPapersModule } from './modules/past-papers/past-papers.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -54,6 +56,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     FirebaseModule,
     StorageModule,
     OpenAiModule,
+    StripeModule,
     // Domain modules
     AuthModule,
     HealthModule,
@@ -76,6 +79,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     AdminModule,
     PastPapersModule,
     SubscriptionModule,
+    WaitlistModule,
   ],
   providers: [
     // Retry transient DB-wake failures before anything else runs.
