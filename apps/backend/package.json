@@ -38,7 +38,8 @@
     "db:cleanup:papers": "ts-node prisma/cleanup-old-papers.ts",
     "db:generate:questions": "ts-node prisma/generate-questions.ts",
     "db:build:lessons": "ts-node prisma/build-lessons.ts",
-    "db:extract:papers": "ts-node prisma/extract-pastpaper-questions.ts"
+    "db:extract:papers": "ts-node prisma/extract-pastpaper-questions.ts",
+    "db:upload:r2": "ts-node prisma/upload-papers-r2.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.665.0",
