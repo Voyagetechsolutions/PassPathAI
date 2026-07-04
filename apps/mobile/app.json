@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PassPath",
-    "slug": "passpath",
+    "slug": "pass-path",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "passpath",
@@ -44,7 +44,12 @@
         "authDomain": "passpath-6bb5e.firebaseapp.com",
         "projectId": "passpath-6bb5e",
         "appId": "1:952643270832:web:e2d4fe5cac68f969e3a375"
+      },
+      "router": {},
+      "eas": {
+        "projectId": "dab4b9a4-fb25-4618-aca4-3ebd8229eb1c"
       }
-    }
+    },
+    "owner": "vtsapps2026"
   }
 }
