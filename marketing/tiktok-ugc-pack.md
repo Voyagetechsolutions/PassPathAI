@@ -1,19 +1,19 @@
 # TikTok UGC pack
 
-AI clips live in `marketing/tiktok-videos/`. Each clip is 5s, silent, vertical —
-by design: you add your own voiceover + TikTok auto-captions in CapCut or
-TikTok's editor. Raw voice over raw-looking footage is what performs; polished
-ads get scrolled past.
+AI clips live in `marketing/tiktok-videos/`. Each is ~7.5s, silent, vertical,
+and already branded: the hook text is baked in at the top, the PassPath icon
+watermarks the corner, and every video ends on a 2.5s PassPath card (logo,
+features, "FREE TO START", launch date). You only add your voiceover — raw
+voice over raw-looking footage is what performs; polished ads get scrolled past.
 
 **Important:** TikTok requires AI-generated content to be labelled. When
 posting, toggle **"AI-generated content"** on. It doesn't hurt reach.
 
-**Workflow per video (5 min in CapCut, free):**
-1. Import the clip → set it to loop or slow it 0.9x to stretch to ~7s.
+**Workflow per video (3 min in CapCut, free):**
+1. Import the clip (hook + end-card are already in it).
 2. Record the voiceover below straight from your phone mic (imperfect = good).
-3. Auto captions → style: white bold, keyword in green (#16A34A).
-4. End card: last 1s, screenshot of the app Home screen + "PassPath · link in bio".
-5. Trending low-key lofi sound under the voiceover at 10% volume.
+3. Auto captions on the voiceover → white bold, keyword in green (#16A34A).
+4. Trending low-key lofi sound under the voiceover at 10% volume.
 
 ---
 
