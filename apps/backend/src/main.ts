@@ -21,7 +21,22 @@ async function bootstrap(): Promise<void> {
   const corsOrigins = config.get('corsOrigins', { infer: true });
 
   app.setGlobalPrefix(apiPrefix);
-  app.use(helmet());
+  // Extend the default CSP so the static admin page can call Firebase Auth
+  // (email/password sign-in) directly from the browser.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'connect-src': [
+            "'self'",
+            'https://identitytoolkit.googleapis.com',
+            'https://securetoken.googleapis.com',
+          ],
+        },
+      },
+    }),
+  );
   // One deployment, one domain: the marketing site (public/) is served at /,
   // the API stays under /api. Registered after helmet so pages get its headers.
   app.useStaticAssets(join(__dirname, '..', 'public'));

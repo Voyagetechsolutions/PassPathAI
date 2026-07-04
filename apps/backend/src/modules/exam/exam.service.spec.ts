@@ -26,11 +26,16 @@ describe('ExamService', () => {
     subscription = { isPremium: jest.fn().mockResolvedValue(true) };
     // AI marker awards full marks (clamped to each question's max) for the test.
     const openai = { isConfigured: true, chatJson: jest.fn().mockResolvedValue({ marks: 99, feedback: 'Correct.' }) };
+    const config = { get: jest.fn().mockReturnValue({ tutorMessages: 5, mockExams: 1 }) };
     service = new ExamService(
       prisma as unknown as PrismaService,
       weakness as unknown as WeaknessService,
       openai as unknown as import('../../infra/openai/openai.service').OpenAiService,
       subscription as unknown as SubscriptionService,
+      config as unknown as import('@nestjs/config').ConfigService<
+        import('../../config/configuration').AppConfig,
+        true
+      >,
     );
   });
 

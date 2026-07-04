@@ -154,6 +154,15 @@
   .price-card .btn { width: 100%; }
   .price-note { text-align: center; font-size: 13px; color: var(--ink-400); margin-top: 22px; }
 
+  /* Launch countdown */
+  .cd-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7CE2A8; margin-bottom: 14px; }
+  .cd-grid { display: flex; justify-content: center; gap: 12px; margin-bottom: 26px; }
+  .cd-cell { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 12px 0; width: 76px; }
+  .cd-cell b { display: block; font-size: 28px; font-weight: 700; color: white; font-variant-numeric: tabular-nums; }
+  .cd-cell span { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cd-live { font-size: 24px; font-weight: 700; color: #7CE2A8; margin-bottom: 26px; }
+  @media (max-width: 480px) { .cd-cell { width: 64px; } .cd-cell b { font-size: 22px; } }
+
   /* CTA */
   .cta-banner { background: var(--navy); border-radius: 22px; padding: 56px 44px; text-align: center; color: white; }
   .cta-banner img { width: 58px; height: 58px; margin: 0 auto 18px; background: var(--white); border-radius: 15px; padding: 7px; }
@@ -363,8 +372,15 @@
   <div class="wrap">
     <div class="cta-banner">
       <img src="logo-mark.png" alt="" />
-      <h2>PassPath is in early access.</h2>
-      <p>We're letting learners in gradually while we finish polishing. Send us an email with your grade and subjects, and we'll get you set up.</p>
+      <h2>PassPath launches 1 August 2026.</h2>
+      <div class="cd-label">Countdown to launch</div>
+      <div class="cd-grid" id="countdown">
+        <div class="cd-cell"><b id="cd-days">–</b><span>Days</span></div>
+        <div class="cd-cell"><b id="cd-hours">–</b><span>Hours</span></div>
+        <div class="cd-cell"><b id="cd-mins">–</b><span>Mins</span></div>
+        <div class="cd-cell"><b id="cd-secs">–</b><span>Secs</span></div>
+      </div>
+      <p>Can't wait? We're letting learners in gradually while we finish polishing. Send us an email with your grade and subjects, and we'll get you set up early.</p>
       <a class="btn btn-primary" href="mailto:mthokochaza@gmail.com?subject=PassPath%20Early%20Access&body=Hi%0A%0AI%27d%20like%20early%20access%20to%20PassPath.%0A%0AMy%20grade%3A%20%0AMy%20subjects%3A%20" style="padding:15px 30px;font-size:15px;">Email us for access</a>
     </div>
   </div>
@@ -383,5 +399,6 @@
   </div>
 </footer>
 
+<script src="countdown.js"></script>
 </body>
 </html>

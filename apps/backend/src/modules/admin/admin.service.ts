@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Role, TestStatus } from '@prisma/client';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Role, SubscriptionStatus, TestStatus } from '@prisma/client';
+import type { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { UpsertAiSettingDto } from './dto/upsert-ai-setting.dto';
 
@@ -10,7 +12,12 @@ import { UpsertAiSettingDto } from './dto/upsert-ai-setting.dto';
  */
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService<AppConfig, true>,
+  ) {}
 
   // ─── Users ─────────────────────────────────────────────────────────────────
 
@@ -90,8 +97,41 @@ export class AdminService {
       this.prisma.aiQuery.count(),
     ]);
 
+    const [tutorConversations, tutorMessages, tutorMessagesWeek, pastPapers, examAttempts] =
+      await Promise.all([
+        this.prisma.tutorConversation.count(),
+        this.prisma.tutorMessage.count({ where: { role: 'user' } }),
+        this.prisma.tutorMessage.count({ where: { role: 'user', createdAt: { gte: weekAgo } } }),
+        this.prisma.pastPaper.count(),
+        this.prisma.examAttempt.count(),
+      ]);
+
+    // Subscriptions fail open: the table may not exist yet (Neon storage cap).
+    let activeSubscriptions = 0;
+    try {
+      activeSubscriptions = await this.prisma.subscription.count({
+        where: { status: SubscriptionStatus.ACTIVE, currentPeriodEnd: { gt: new Date() } },
+      });
+    } catch {
+      this.logger.warn('Subscription table unavailable — reporting 0 active subscriptions');
+    }
+
+    // Database size, to watch the Neon free-tier 512MB cap.
+    let dbSizeMb: number | null = null;
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ size: bigint }>>`
+        SELECT pg_database_size(current_database()) AS size`;
+      dbSizeMb = Math.round(Number(rows[0]?.size ?? 0) / 1024 / 1024);
+    } catch {
+      /* non-fatal */
+    }
+
+    const openai = this.config.get('openai', { infer: true });
+    const freeTrial = this.config.get('freeTrial', { infer: true });
+    const paystack = this.config.get('paystack', { infer: true });
+
     return {
-      content: { subjects, questions, lessons, careers },
+      content: { subjects, questions, lessons, careers, pastPapers },
       users: { total: users, students, parents, onboarded },
       engagement: {
         activeToday,
@@ -101,6 +141,23 @@ export class AdminService {
         avgStreak: Math.round((streakAgg._avg.currentStreak ?? 0) * 10) / 10,
         longestStreak: streakAgg._max.longestStreak ?? 0,
         aiQueries,
+        tutorConversations,
+        tutorMessages,
+        tutorMessagesThisWeek: tutorMessagesWeek,
+        examAttempts,
+      },
+      revenue: {
+        activeSubscriptions,
+        priceLabel: `R${(paystack.monthlyAmountCents / 100).toFixed(0)}/month`,
+        estimatedMrr: Math.round((activeSubscriptions * paystack.monthlyAmountCents) / 100),
+        paystackConfigured: Boolean(paystack.secretKey),
+      },
+      system: {
+        dbSizeMb,
+        chatModel: openai.chatModel,
+        chatProvider: openai.chatBaseUrl ? new URL(openai.chatBaseUrl).host : 'api.openai.com',
+        embeddingsConfigured: Boolean(openai.apiKey),
+        freeTrial,
       },
     };
   }

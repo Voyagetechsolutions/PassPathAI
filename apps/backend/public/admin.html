@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PassPath — Admin</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B2545; --green: #16A34A; --green-tint: #E7F6EC;
+    --canvas: #F8FAFC; --white: #FFFFFF; --ink: #0F172A; --ink-600: #334155;
+    --ink-400: #64748B; --line: #E8EDF3; --danger: #DC2626; --warn: #D97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Poppins', sans-serif; background: var(--canvas); color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 60px; }
+  header { background: var(--navy); color: white; padding: 14px 0; margin-bottom: 26px; }
+  .head-inner { max-width: 1080px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 12px; }
+  .head-inner img { width: 34px; height: 34px; background: white; border-radius: 9px; padding: 3px; }
+  .head-inner b { font-size: 17px; }
+  .head-inner span { color: rgba(255,255,255,0.65); font-size: 13px; }
+  .head-inner .spacer { flex: 1; }
+  .head-inner button { background: rgba(255,255,255,0.12); color: white; border: 0; border-radius: 9px; padding: 8px 14px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  h2 { font-size: 15px; color: var(--ink-600); font-weight: 600; margin: 26px 0 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card b { display: block; font-size: 26px; color: var(--navy); }
+  .card span { font-size: 12.5px; color: var(--ink-400); }
+  .card.green b { color: var(--green); }
+  table { width: 100%; border-collapse: collapse; background: var(--white); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { background: var(--canvas); color: var(--ink-400); font-weight: 600; font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 600; }
+  .pill.ok { background: var(--green-tint); color: var(--green); }
+  .pill.off { background: #FEE2E2; color: var(--danger); }
+  .pill.role { background: #E0E7FF; color: #3730A3; }
+  td button { border: 1px solid var(--line); background: var(--white); border-radius: 8px; padding: 5px 10px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ink-600); }
+  td button:hover { border-color: var(--navy); color: var(--navy); }
+  /* Login */
+  .login { max-width: 380px; margin: 60px auto; background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 30px; }
+  .login h1 { font-size: 20px; color: var(--navy); margin-bottom: 4px; }
+  .login p { font-size: 13.5px; color: var(--ink-400); margin-bottom: 20px; }
+  .login label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-600); margin: 12px 0 4px; }
+  .login input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font-family: inherit; font-size: 14px; }
+  .login button { width: 100%; margin-top: 20px; background: var(--green); color: white; border: 0; border-radius: 10px; padding: 13px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .login .err { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+  .muted { color: var(--ink-400); font-size: 13px; }
+  .hidden { display: none; }
+  #loading { text-align: center; padding: 40px; color: var(--ink-400); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <img src="logo-mark.png" alt="" />
+    <div><b>PassPath Admin</b><br /><span id="who">Not signed in</span></div>
+    <div class="spacer"></div>
+    <button id="refresh-btn" class="hidden">Refresh</button>
+    <button id="logout-btn" class="hidden">Sign out</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="login-view" class="login">
+    <h1>Admin sign-in</h1>
+    <p>Use your PassPath account. Only authorised admin emails can enter.</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" />
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+    <button id="login-btn">Sign in</button>
+    <div class="err" id="login-err"></div>
+  </div>
+
+  <div id="dash-view" class="hidden">
+    <div id="loading">Loading platform data…</div>
+    <div id="dash-content" class="hidden">
+      <h2>Users</h2>
+      <div class="cards" id="user-cards"></div>
+      <h2>Engagement</h2>
+      <div class="cards" id="engage-cards"></div>
+      <h2>Revenue</h2>
+      <div class="cards" id="revenue-cards"></div>
+      <h2>Content &amp; system</h2>
+      <div class="cards" id="system-cards"></div>
+      <h2>All users</h2>
+      <table>
+        <thead><tr><th>Email</th><th>Name</th><th>Grade</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+        <tbody id="users-body"></tbody>
+      </table>
+      <h2>Recent admin actions</h2>
+      <table>
+        <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th></tr></thead>
+        <tbody id="audit-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

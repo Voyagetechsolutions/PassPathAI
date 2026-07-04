@@ -20,7 +20,16 @@ export interface AppConfig {
     chatModel: string;
     embeddingModel: string;
     embeddingDim: number;
+    // Optional separate provider for chat (Groq/Gemini/OpenRouter — any
+    // OpenAI-compatible endpoint). Embeddings always stay on api.openai.com
+    // because the stored vectors are 1536-dim text-embedding-3-small.
+    chatApiKey: string;
+    chatBaseUrl?: string;
   };
+  // Emails allowed into the admin dashboard regardless of their DB role, so the
+  // founder's student account works without a role change.
+  admin: { emails: string[] };
+  freeTrial: { tutorMessages: number; mockExams: number };
   storage: {
     driver: 's3' | 'local';
     region: string;
@@ -71,9 +80,18 @@ export default (): AppConfig => ({
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY ?? '',
-    chatModel: process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini',
+    chatModel: process.env.AI_CHAT_MODEL ?? process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini',
     embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small',
     embeddingDim: parseInt(process.env.OPENAI_EMBEDDING_DIM ?? '1536', 10),
+    chatApiKey: process.env.AI_API_KEY ?? process.env.OPENAI_API_KEY ?? '',
+    chatBaseUrl: process.env.AI_BASE_URL || undefined,
+  },
+  admin: {
+    emails: splitCsv(process.env.ADMIN_EMAILS ?? 'mthokochaza@gmail.com').map((e) => e.toLowerCase()),
+  },
+  freeTrial: {
+    tutorMessages: parseInt(process.env.FREE_TUTOR_MESSAGES ?? '5', 10),
+    mockExams: parseInt(process.env.FREE_MOCK_EXAMS ?? '1', 10),
   },
   storage: {
     driver: (process.env.STORAGE_DRIVER as 's3' | 'local') ?? 's3',

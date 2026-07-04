@@ -18,7 +18,12 @@ export interface ChatResult {
 @Injectable()
 export class OpenAiService {
   private readonly logger = new Logger(OpenAiService.name);
-  private readonly client?: OpenAI;
+  // Chat may run on any OpenAI-compatible provider (Groq, Gemini, OpenRouter…)
+  // via AI_BASE_URL/AI_API_KEY/AI_CHAT_MODEL. Embeddings always stay on
+  // api.openai.com — the stored vectors are 1536-dim text-embedding-3-small,
+  // and mixing embedding models would corrupt retrieval.
+  private readonly chatClient?: OpenAI;
+  private readonly embedClient?: OpenAI;
   private readonly defaultChatModel: string;
   private readonly defaultEmbeddingModel: string;
 
@@ -26,15 +31,23 @@ export class OpenAiService {
     const openai = this.config.get('openai', { infer: true });
     this.defaultChatModel = openai.chatModel;
     this.defaultEmbeddingModel = openai.embeddingModel;
-    if (openai.apiKey) {
-      this.client = new OpenAI({ apiKey: openai.apiKey });
+    if (openai.chatApiKey) {
+      this.chatClient = new OpenAI({ apiKey: openai.chatApiKey, baseURL: openai.chatBaseUrl });
+      if (openai.chatBaseUrl) {
+        this.logger.log(`Chat provider: ${openai.chatBaseUrl} (model ${openai.chatModel})`);
+      }
     } else {
-      this.logger.warn('OPENAI_API_KEY not set — AI features will be unavailable.');
+      this.logger.warn('No AI_API_KEY or OPENAI_API_KEY set — AI features will be unavailable.');
+    }
+    if (openai.apiKey) {
+      this.embedClient = new OpenAI({ apiKey: openai.apiKey });
+    } else {
+      this.logger.warn('OPENAI_API_KEY not set — embeddings/retrieval will be unavailable.');
     }
   }
 
   get isConfigured(): boolean {
-    return Boolean(this.client);
+    return Boolean(this.chatClient);
   }
 
   get chatModelName(): string {
@@ -42,10 +55,17 @@ export class OpenAiService {
   }
 
   private require(): OpenAI {
-    if (!this.client) {
+    if (!this.chatClient) {
       throw new ServiceUnavailableException('AI service is not configured');
     }
-    return this.client;
+    return this.chatClient;
+  }
+
+  private requireEmbed(): OpenAI {
+    if (!this.embedClient) {
+      throw new ServiceUnavailableException('Embeddings are not configured');
+    }
+    return this.embedClient;
   }
 
   /**
@@ -55,7 +75,7 @@ export class OpenAiService {
     if (texts.length === 0) {
       return [];
     }
-    const res = await this.require().embeddings.create({
+    const res = await this.requireEmbed().embeddings.create({
       model: model ?? this.defaultEmbeddingModel,
       input: texts,
     });

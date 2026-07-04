@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { QuestionType, TestStatus } from '@prisma/client';
+import type { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { OpenAiService } from '../../infra/openai/openai.service';
 import { WeaknessService, TopicResult } from '../weakness/weakness.service';
@@ -13,9 +15,6 @@ import { gradeResponse } from '../../common/utils/grading';
 import { buildMarkingPrompt } from '../ai/prompts';
 import { GenerateExamDto } from './dto/generate-exam.dto';
 import { SubmitExamDto } from './dto/submit-exam.dto';
-
-/** Free accounts get one mock exam to see the format before hitting Premium. */
-const FREE_TRIAL_MOCK_EXAMS = 1;
 
 const SECTION_ORDER: QuestionType[] = [
   QuestionType.MULTIPLE_CHOICE,
@@ -40,6 +39,7 @@ export class ExamService {
     private readonly weakness: WeaknessService,
     private readonly openai: OpenAiService,
     private readonly subscription: SubscriptionService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   /** AI-mark a written answer against the model answer, awarding partial marks. */
@@ -75,7 +75,8 @@ export class ExamService {
       const usedLifetime = await this.prisma.examPaper.count({
         where: { isMock: true, attempts: { some: { studentId } } },
       });
-      if (usedLifetime >= FREE_TRIAL_MOCK_EXAMS) {
+      // Free accounts get a taste of mock exams before Premium (FREE_MOCK_EXAMS).
+      if (usedLifetime >= this.config.get('freeTrial', { infer: true }).mockExams) {
         throw new ForbiddenException('Mock exams are a Premium feature — you’ve used your free one. Upgrade to keep practising with full timed papers.');
       }
     }

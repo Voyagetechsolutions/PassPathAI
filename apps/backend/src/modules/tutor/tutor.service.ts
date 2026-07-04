@@ -1,4 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { OpenAiService } from '../../infra/openai/openai.service';
 import { AiService } from '../ai/ai.service';
@@ -20,12 +22,6 @@ const HISTORY_LIMIT = 24; // cap tokens — keep the recent back-and-forth
  * the student toward "explain it back" + practice rather than endless chatting.
  */
 const MAX_TUTOR_TURNS = 25;
-/**
- * Free accounts get a small taste of the AI tutor (lifetime, across all topics)
- * before hitting the Premium paywall — enough to feel the product work, not
- * enough to substitute for subscribing.
- */
-const FREE_TRIAL_MESSAGES = 5;
 const STYLE_LABEL = new Map(TUTOR_STARTERS.map((s) => [s.key, s.label]));
 
 export interface RatingResult {
@@ -54,7 +50,17 @@ export class TutorService {
     private readonly ai: AiService,
     private readonly weakness: WeaknessService,
     private readonly subscription: SubscriptionService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
+
+  /**
+   * Free accounts get a small lifetime taste of the AI tutor before the Premium
+   * paywall — enough to feel the product work, not enough to substitute for
+   * subscribing. Tuned via FREE_TUTOR_MESSAGES.
+   */
+  private get freeTrialMessages(): number {
+    return this.config.get('freeTrial', { infer: true }).tutorMessages;
+  }
 
   private requireStudent(studentId: string | undefined): string {
     if (!studentId) {
@@ -238,7 +244,7 @@ export class TutorService {
 
   // ─── Internals ─────────────────────────────────────────────────────────────────
 
-  /** Premium accounts always pass. Free accounts get FREE_TRIAL_MESSAGES lifetime. */
+  /** Premium accounts always pass. Free accounts get a lifetime message budget. */
   private async checkEntitlement(studentId: string): Promise<{ allowed: boolean }> {
     if (await this.subscription.isPremium(studentId)) {
       return { allowed: true };
@@ -246,7 +252,7 @@ export class TutorService {
     const usedLifetime = await this.prisma.tutorMessage.count({
       where: { role: 'user', conversation: { studentId } },
     });
-    return { allowed: usedLifetime < FREE_TRIAL_MESSAGES };
+    return { allowed: usedLifetime < this.freeTrialMessages };
   }
 
   private async loadTopic(topicId: string) {
