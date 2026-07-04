@@ -72,7 +72,7 @@ Everything to copy-paste into the Google Play Console. Work top to bottom.
 |---|---|---|
 | App icon | 512×512 PNG | `marketing/assets/play-icon-512.png` |
 | Feature graphic | 1024×500 PNG | `marketing/assets/feature-graphic.png` |
-| Phone screenshots | min 2, 9:16 | take from your phone: Home, a tutor chat, Career Hub, an exam. Long-press power+volume-down while the app is open. |
+| Phone screenshots | min 2, 9:16 | `marketing/assets/store-screens/01…08.png` — 8 framed 1080×1920 screens, upload in numeric order. Also reuse for the 7-inch and 10-inch tablet slots. |
 
 ## 5. Content rating questionnaire (IARC)
 
