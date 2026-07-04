@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   PanResponder,
   Pressable,
@@ -275,6 +276,24 @@ export function ListRow({
 }
 
 /**
+ * A small ⓘ that explains a term (APS, readiness, mastery…) in plain language.
+ * Uses the native dialog so it works identically inside any card layout.
+ */
+export function InfoTip({ title, tip }: { title: string; tip: string }) {
+  return (
+    <Pressable
+      onPress={() => Alert.alert(title, tip)}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={`What is ${title}?`}
+      style={({ pressed }) => [styles.infoTip, pressed && { opacity: 0.6 }]}
+    >
+      <Text style={styles.infoTipMark}>i</Text>
+    </Pressable>
+  );
+}
+
+/**
  * Pulsing placeholder block. Compose a few of these in the shape of the real
  * screen so first loads feel structured instead of blank-with-spinner.
  */
@@ -389,4 +408,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.md,
   },
+  infoTip: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.ink300,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoTipMark: { fontSize: 10, fontFamily: fonts.bold, color: colors.ink400, lineHeight: 13 },
 });

@@ -8,15 +8,16 @@ describe('WeaknessService', () => {
 
   beforeEach(() => {
     prisma = {
-      topicMastery: { findUnique: jest.fn(), upsert: jest.fn() },
+      topicMastery: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn() },
       weakTopicProfile: { upsert: jest.fn(), deleteMany: jest.fn() },
       mistakeLog: { upsert: jest.fn() },
+      $transaction: jest.fn().mockResolvedValue([]),
     };
     service = new WeaknessService(prisma as unknown as PrismaService);
   });
 
   it('accumulates mastery across prior attempts', async () => {
-    prisma.topicMastery.findUnique.mockResolvedValue({ attempts: 4, correct: 2 });
+    prisma.topicMastery.findMany.mockResolvedValue([{ topicId: 't1', attempts: 4, correct: 2 }]);
     await service.recordResults('sp1', [{ topicId: 't1', attempts: 2, correct: 2 }], 'diagnostic');
 
     const upsertArg = prisma.topicMastery.upsert.mock.calls[0][0];
@@ -27,7 +28,7 @@ describe('WeaknessService', () => {
   });
 
   it('flags a topic as weak when mastery is at/below the threshold', async () => {
-    prisma.topicMastery.findUnique.mockResolvedValue(null);
+    prisma.topicMastery.findMany.mockResolvedValue([]);
     await service.recordResults('sp1', [{ topicId: 't1', attempts: 4, correct: 1 }], 'diagnostic');
     // mastery 0.25 → weakness 0.75 ≥ 0.5
     expect(prisma.weakTopicProfile.upsert).toHaveBeenCalledTimes(1);
@@ -35,9 +36,9 @@ describe('WeaknessService', () => {
   });
 
   it('clears the weak flag once a topic is mastered', async () => {
-    prisma.topicMastery.findUnique.mockResolvedValue(null);
+    prisma.topicMastery.findMany.mockResolvedValue([]);
     await service.recordResults('sp1', [{ topicId: 't1', attempts: 4, correct: 4 }], 'diagnostic');
-    // mastery 1.0 → weakness 0 < 0.5
+    // smoothed mastery 4/6 ≈ 0.67 → weakness 0.33 < 0.5
     expect(prisma.weakTopicProfile.deleteMany).toHaveBeenCalledTimes(1);
     expect(prisma.weakTopicProfile.upsert).not.toHaveBeenCalled();
   });

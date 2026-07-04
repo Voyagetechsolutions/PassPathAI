@@ -157,10 +157,11 @@ export class CareerService {
 
     const sorted = results.sort((a, b) => b.admissionLikelihood - a.admissionLikelihood);
 
-    // Persist only the strongest matches for the student's record — best-effort, and
-    // bounded so it never floods the connection pool (the full set is ~120 careers).
+    // Persist only the strongest matches for the student's record — best-effort,
+    // batched into one transaction so it uses a single connection/round-trip
+    // instead of twelve parallel ones.
     try {
-      await Promise.all(
+      await this.prisma.$transaction(
         sorted.slice(0, 12).map((r) =>
           this.prisma.careerMatch.upsert({
             where: { studentId_careerId: { studentId, careerId: r.careerId } },

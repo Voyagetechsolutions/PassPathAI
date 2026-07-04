@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import type { AppConfig } from './config/configuration';
@@ -21,6 +22,11 @@ async function bootstrap(): Promise<void> {
   const corsOrigins = config.get('corsOrigins', { infer: true });
 
   app.setGlobalPrefix(apiPrefix);
+  // Railway/Vercel sit in front of us — trust the proxy so req.ip is the real
+  // client address (rate limiting and the per-IP signup guard depend on it).
+  app.set('trust proxy', 1);
+  // Gzip JSON/HTML responses — tutor replies and career lists shrink ~5-10x.
+  app.use(compression());
   // Extend the default CSP so the static admin page can call Firebase Auth
   // (email/password sign-in) directly from the browser.
   app.use(
@@ -39,7 +45,15 @@ async function bootstrap(): Promise<void> {
   );
   // One deployment, one domain: the marketing site (public/) is served at /,
   // the API stays under /api. Registered after helmet so pages get its headers.
-  app.useStaticAssets(join(__dirname, '..', 'public'));
+  // Images/scripts cache for a day; HTML revalidates so deploys show up fast.
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
+  });
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : true,
     credentials: true,

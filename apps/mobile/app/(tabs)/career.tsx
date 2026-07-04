@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/lib/auth';
 import { apiRequest } from '../../src/lib/api';
 import { Screen } from '../../src/components/screen';
-import { Card, ScoreRing, ProgressBar, Slider, Loading, ErrorText } from '../../src/components/ui';
+import { Card, ScoreRing, ProgressBar, Slider, InfoTip, SkeletonCard, ErrorText } from '../../src/components/ui';
 import { Compass, GradCap, Target, TrendUp, Check, ChevronRight } from '../../src/components/icons';
 import { SUBJECTS } from '../../src/lib/sa';
 import { careerEmoji, computeAps, factsFor } from '../../src/lib/careers';
@@ -80,6 +80,9 @@ export default function CareerTab() {
   }, [whatIfSubject, whatIfMark, markPairs, results, aps]);
 
   async function save(next: Record<string, string>) {
+    // Optimistic: close immediately and keep the current matches on screen
+    // while the fresh ones compute — reopen with the error only if it fails.
+    setEditOpen(false);
     setSaving(true);
     setError(null);
     try {
@@ -90,15 +93,22 @@ export default function CareerTab() {
       setResults(recs);
       setAps(recs[0]?.computedAps ?? 0);
       setWhatIfSubject(null);
-      setEditOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update.');
+      setEditOpen(true);
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) return <Screen><Loading label="Finding where you’re going…" /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={3} />
+      </Screen>
+    );
 
   const apsTone = aps >= 33 ? GREEN : aps >= 24 ? colors.warn : colors.danger;
   const apsBar = aps >= 33 ? 'emerald' : aps >= 24 ? 'warn' : 'danger';
@@ -160,7 +170,13 @@ export default function CareerTab() {
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <View>
-                <Text style={text.label}>Current APS</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={text.label}>Current APS</Text>
+                  <InfoTip
+                    title="APS — Admission Point Score"
+                    tip="Universities convert your best 6 subjects (Life Orientation counts less) into points: 80%+ = 7 points, 70–79% = 6, 60–69% = 5, and so on. Each degree asks for a minimum APS. Raise a subject one band and your APS goes up."
+                  />
+                </View>
                 <Text style={{ fontSize: 48, fontFamily: 'Poppins_700Bold', color: colors.ink, letterSpacing: -1 }}>{aps}</Text>
               </View>
               <Text style={{ fontSize: 13, fontFamily: 'Poppins_700Bold', color: apsTone, marginBottom: spacing.md }}>

@@ -5,7 +5,7 @@ import { useAuth } from '../../src/lib/auth';
 import { apiRequest } from '../../src/lib/api';
 import { useApi } from '../../src/lib/use-api';
 import { Screen } from '../../src/components/screen';
-import { Card, ScoreRing, ProgressBar, Loading, EmptyState, ErrorText } from '../../src/components/ui';
+import { Card, ScoreRing, ProgressBar, SkeletonCard, EmptyState, ErrorText } from '../../src/components/ui';
 import { Calculator, Flask, Leaf, Briefcase, BarChart, Book, Compass, Bulb, Target, ChevronRight } from '../../src/components/icons';
 import { colors, radius, spacing, text } from '../../src/theme';
 import type { ProfileSummary, SubjectTree } from '../../src/lib/types';
@@ -59,7 +59,14 @@ export default function StudyTab() {
     return [...topics].sort((a, b) => (masteryByTopic.get(a.id) ?? 0) - (masteryByTopic.get(b.id) ?? 0))[0];
   }, [topics, masteryByTopic]);
 
-  if (loading) return <Screen><Loading label="Loading your study hub…" /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={1} />
+        <SkeletonCard lines={3} />
+      </Screen>
+    );
   if (error) return <Screen><ErrorText message={error} /></Screen>;
 
   function openTopic(topicId: string, title: string) {
@@ -157,7 +164,11 @@ export default function StudyTab() {
       <View>
         <Text style={[text.section, { marginBottom: spacing.md }]}>Topics{selectedSubject ? ` · ${selectedSubject.name}` : ''}</Text>
         {treeLoading ? (
-          <Loading label="Loading topics…" />
+          <View style={{ gap: spacing.md }}>
+            <SkeletonCard lines={1} />
+            <SkeletonCard lines={1} />
+            <SkeletonCard lines={1} />
+          </View>
         ) : topics.length === 0 ? (
           <EmptyState title="No topics yet" message="This subject’s topics are being added." />
         ) : (

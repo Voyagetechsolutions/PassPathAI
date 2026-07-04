@@ -24,13 +24,17 @@ export class OpenAiService {
   // and mixing embedding models would corrupt retrieval.
   private readonly chatClient?: OpenAI;
   private readonly embedClient?: OpenAI;
+  private readonly usingExternalChatProvider: boolean;
   private readonly defaultChatModel: string;
   private readonly defaultEmbeddingModel: string;
+  /** Used when the external chat provider fails and we fail over to OpenAI. */
+  private static readonly FALLBACK_CHAT_MODEL = 'gpt-4o-mini';
 
   constructor(private readonly config: ConfigService<AppConfig, true>) {
     const openai = this.config.get('openai', { infer: true });
     this.defaultChatModel = openai.chatModel;
     this.defaultEmbeddingModel = openai.embeddingModel;
+    this.usingExternalChatProvider = Boolean(openai.chatBaseUrl);
     if (openai.chatApiKey) {
       this.chatClient = new OpenAI({ apiKey: openai.chatApiKey, baseURL: openai.chatBaseUrl });
       if (openai.chatBaseUrl) {
@@ -43,6 +47,25 @@ export class OpenAiService {
       this.embedClient = new OpenAI({ apiKey: openai.apiKey });
     } else {
       this.logger.warn('OPENAI_API_KEY not set — embeddings/retrieval will be unavailable.');
+    }
+  }
+
+  /**
+   * Run a chat completion on the primary provider; if an external provider
+   * (Groq/Gemini/…) fails, retry once on api.openai.com so the tutor never has
+   * a single point of failure.
+   */
+  private async withFailover<T>(run: (client: OpenAI, model: string) => Promise<T>, model: string): Promise<T> {
+    try {
+      return await run(this.require(), model);
+    } catch (e) {
+      if (!this.usingExternalChatProvider || !this.embedClient) {
+        throw e;
+      }
+      this.logger.warn(
+        `Primary chat provider failed (${(e as Error).message}) — failing over to api.openai.com/${OpenAiService.FALLBACK_CHAT_MODEL}`,
+      );
+      return run(this.embedClient, OpenAiService.FALLBACK_CHAT_MODEL);
     }
   }
 
@@ -91,21 +114,22 @@ export class OpenAiService {
    * Deterministic chat completion (temperature 0) for grounded answers.
    */
   async chat(system: string, user: string, model?: string): Promise<ChatResult> {
-    const chosen = model ?? this.defaultChatModel;
-    const res = await this.require().chat.completions.create({
-      model: chosen,
-      temperature: 0,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    });
-    return {
-      content: res.choices[0]?.message?.content?.trim() ?? '',
-      model: chosen,
-      promptTokens: res.usage?.prompt_tokens ?? 0,
-      completionTokens: res.usage?.completion_tokens ?? 0,
-    };
+    return this.withFailover(async (client, chosen) => {
+      const res = await client.chat.completions.create({
+        model: chosen,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      });
+      return {
+        content: res.choices[0]?.message?.content?.trim() ?? '',
+        model: chosen,
+        promptTokens: res.usage?.prompt_tokens ?? 0,
+        completionTokens: res.usage?.completion_tokens ?? 0,
+      };
+    }, model ?? this.defaultChatModel);
   }
 
   /**
@@ -118,18 +142,19 @@ export class OpenAiService {
     history: Array<{ role: 'user' | 'assistant'; content: string }>,
     opts?: { temperature?: number; model?: string },
   ): Promise<ChatResult> {
-    const chosen = opts?.model ?? this.defaultChatModel;
-    const res = await this.require().chat.completions.create({
-      model: chosen,
-      temperature: opts?.temperature ?? 0.6,
-      messages: [{ role: 'system', content: system }, ...history],
-    });
-    return {
-      content: res.choices[0]?.message?.content?.trim() ?? '',
-      model: chosen,
-      promptTokens: res.usage?.prompt_tokens ?? 0,
-      completionTokens: res.usage?.completion_tokens ?? 0,
-    };
+    return this.withFailover(async (client, chosen) => {
+      const res = await client.chat.completions.create({
+        model: chosen,
+        temperature: opts?.temperature ?? 0.6,
+        messages: [{ role: 'system', content: system }, ...history],
+      });
+      return {
+        content: res.choices[0]?.message?.content?.trim() ?? '',
+        model: chosen,
+        promptTokens: res.usage?.prompt_tokens ?? 0,
+        completionTokens: res.usage?.completion_tokens ?? 0,
+      };
+    }, opts?.model ?? this.defaultChatModel);
   }
 
   /**
@@ -137,17 +162,18 @@ export class OpenAiService {
    * Used for structured generation (e.g. question banks).
    */
   async chatJson<T>(system: string, user: string, model?: string): Promise<T> {
-    const chosen = model ?? this.defaultChatModel;
-    const res = await this.require().chat.completions.create({
-      model: chosen,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    });
-    const content = res.choices[0]?.message?.content ?? '{}';
-    return JSON.parse(content) as T;
+    return this.withFailover(async (client, chosen) => {
+      const res = await client.chat.completions.create({
+        model: chosen,
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      });
+      const content = res.choices[0]?.message?.content ?? '{}';
+      return JSON.parse(content) as T;
+    }, model ?? this.defaultChatModel);
   }
 }

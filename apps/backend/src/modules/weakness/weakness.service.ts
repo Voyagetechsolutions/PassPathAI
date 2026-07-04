@@ -30,37 +30,49 @@ export class WeaknessService {
    * refresh their weak-topic list. `source` records what produced the results.
    */
   async recordResults(studentId: string, results: TopicResult[], source: string): Promise<void> {
+    if (results.length === 0) {
+      return;
+    }
+    // One read for the whole batch, then every write in a single transaction —
+    // an exam covering 12 topics costs 2 round-trips instead of ~40.
+    const existing = await this.prisma.topicMastery.findMany({
+      where: { studentId, topicId: { in: results.map((r) => r.topicId) } },
+    });
+    const byTopic = new Map(existing.map((e) => [e.topicId, e]));
+
+    const ops = [];
     for (const r of results) {
-      const existing = await this.prisma.topicMastery.findUnique({
-        where: { studentId_topicId: { studentId, topicId: r.topicId } },
-      });
-      const attempts = (existing?.attempts ?? 0) + r.attempts;
-      const correct = (existing?.correct ?? 0) + r.correct;
+      const prev = byTopic.get(r.topicId);
+      const attempts = (prev?.attempts ?? 0) + r.attempts;
+      const correct = (prev?.correct ?? 0) + r.correct;
       // Smoothed ratio (two virtual missed attempts): one lucky answer reads
       // ~33%, not an instant 100% — full mastery is earned over volume.
       const SMOOTHING = 2;
       const masteryScore = attempts > 0 ? correct / (attempts + SMOOTHING) : 0;
       const weaknessScore = 1 - masteryScore;
 
-      await this.prisma.topicMastery.upsert({
-        where: { studentId_topicId: { studentId, topicId: r.topicId } },
-        update: { attempts, correct, masteryScore, weaknessScore },
-        create: { studentId, topicId: r.topicId, attempts, correct, masteryScore, weaknessScore },
-      });
+      ops.push(
+        this.prisma.topicMastery.upsert({
+          where: { studentId_topicId: { studentId, topicId: r.topicId } },
+          update: { attempts, correct, masteryScore, weaknessScore },
+          create: { studentId, topicId: r.topicId, attempts, correct, masteryScore, weaknessScore },
+        }),
+      );
 
       // Keep the weak-topic list accurate: flag when weak, clear when recovered.
       if (weaknessScore >= WeaknessService.WEAK_THRESHOLD) {
-        await this.prisma.weakTopicProfile.upsert({
-          where: { studentId_topicId: { studentId, topicId: r.topicId } },
-          update: { weaknessScore, source },
-          create: { studentId, topicId: r.topicId, weaknessScore, source },
-        });
+        ops.push(
+          this.prisma.weakTopicProfile.upsert({
+            where: { studentId_topicId: { studentId, topicId: r.topicId } },
+            update: { weaknessScore, source },
+            create: { studentId, topicId: r.topicId, weaknessScore, source },
+          }),
+        );
       } else {
-        await this.prisma.weakTopicProfile.deleteMany({
-          where: { studentId, topicId: r.topicId },
-        });
+        ops.push(this.prisma.weakTopicProfile.deleteMany({ where: { studentId, topicId: r.topicId } }));
       }
     }
+    await this.prisma.$transaction(ops);
   }
 
   /**

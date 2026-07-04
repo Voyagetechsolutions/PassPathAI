@@ -5,7 +5,7 @@ import { useAuth } from '../src/lib/auth';
 import { apiRequest } from '../src/lib/api';
 import { useApi } from '../src/lib/use-api';
 import { Screen } from '../src/components/screen';
-import { Card, ProgressBar, Slider, SkeletonCard, ErrorText } from '../src/components/ui';
+import { Card, ProgressBar, Slider, InfoTip, SkeletonCard, ErrorText } from '../src/components/ui';
 import { Check, Target, TrendUp } from '../src/components/icons';
 import { careerEmoji, computeAps, factsFor } from '../src/lib/careers';
 import { colors, radius, spacing, text } from '../src/theme';
@@ -115,7 +115,13 @@ export default function CareerDetailScreen() {
       {/* Required APS */}
       {neededAps ? (
         <Card style={{ alignItems: 'center' }}>
-          <Text style={[text.label, { alignSelf: 'flex-start' }]}>Admission Points (APS)</Text>
+          <View style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={text.label}>Admission Points (APS)</Text>
+            <InfoTip
+              title="APS — Admission Point Score"
+              tip="Your best 6 subjects converted to points (80%+ = 7, 70–79% = 6, 60–69% = 5…). This career's number is the minimum APS its university programmes ask for."
+            />
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.md }}>
             <Text style={{ fontSize: 44, fontFamily: 'Poppins_700Bold', color: apsTone }}>{aps}</Text>
             <Text style={{ fontSize: 18, color: colors.ink400 }}>/ {neededAps} needed</Text>

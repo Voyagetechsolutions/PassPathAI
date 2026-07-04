@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Logger, Post, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { IsEmail, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../infra/prisma/prisma.service';
@@ -29,6 +30,7 @@ export class WaitlistController {
   @Post()
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } }) // 10/hour per IP
   @ApiOperation({ summary: 'Join the early-access waitlist' })
   async join(@Body() dto: JoinWaitlistDto): Promise<{ ok: true }> {
     const email = dto.email.trim().toLowerCase();

@@ -267,7 +267,7 @@ export class TutorService {
     const [{ context }, memory, student] = await Promise.all([
       this.gatherContext(topic),
       this.learnerMemory(studentId),
-      this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { firstName: true } }),
+      this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { firstName: true, syllabus: true } }),
     ]);
     return buildTutorSystemPrompt({
       grade: topic.subject.grade,
@@ -276,6 +276,7 @@ export class TutorService {
       syllabusContext: context,
       learnerMemory: memory,
       studentName: student?.firstName,
+      syllabus: student?.syllabus ?? 'CAPS',
     });
   }
 

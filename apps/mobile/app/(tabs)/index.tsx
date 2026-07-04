@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApi } from '../../src/lib/use-api';
 import { Screen } from '../../src/components/screen';
-import { Card, ScoreRing, ProgressBar, LineChart, Loading, EmptyState, ErrorText } from '../../src/components/ui';
+import { Card, ScoreRing, ProgressBar, LineChart, InfoTip, SkeletonCard, EmptyState, ErrorText } from '../../src/components/ui';
 import { Bell, Target, Check, Book, FileText, Timer, Briefcase, GradCap, User, ChevronRight } from '../../src/components/icons';
 import { colors, radius, spacing, text } from '../../src/theme';
 import type { DashboardView, ProfileSummary, CountdownView, DailyGoal, PredictionPoint } from '../../src/lib/types';
@@ -23,7 +23,14 @@ export default function HomeTab() {
   const { data: today } = useApi<DailyGoal>('/roadmap/today');
   const { data: predictions } = useApi<PredictionPoint[]>('/dashboard/predictions');
 
-  if (loading) return <Screen><Loading label="Loading your dashboard…" /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={2} />
+      </Screen>
+    );
   if (error) return <Screen><ErrorText message={error} /></Screen>;
   if (!data) return <Screen><EmptyState title="No data yet" message="Take a diagnostic to begin." /></Screen>;
 
@@ -81,7 +88,13 @@ export default function HomeTab() {
       {/* Readiness + Today's mission */}
       <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'stretch' }}>
         <Card style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[text.label, { alignSelf: 'flex-start' }]}>Exam Readiness</Text>
+          <View style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={text.label}>Exam Readiness</Text>
+            <InfoTip
+              title="Exam Readiness"
+              tip="A single score built from your topic mastery across all your subjects — how prepared you'd be if exams started today. It moves every time you learn, practise or get scored on a topic."
+            />
+          </View>
           <View style={{ marginVertical: spacing.md }}>
             <ScoreRing value={readiness} size={120} label={readinessWord} />
           </View>

@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,6 +30,9 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  // Abuse guard: at most 5 new accounts per IP per day. Generous enough for a
+  // family or a study group on one connection; hostile enough for farm scripts.
+  @Throttle({ default: { limit: 5, ttl: 86_400_000 } })
   @ApiOperation({ summary: 'Provision a local account after Firebase sign-up' })
   async register(
     @Headers('authorization') authorization: string | undefined,

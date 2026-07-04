@@ -12,6 +12,7 @@ import {
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -44,6 +45,7 @@ export class SubscriptionController {
 
   @Post('checkout')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } }) // 10/hour per IP
   @ApiBearerAuth()
   @Roles(Role.student)
   @ApiOperation({ summary: 'Start a Paystack checkout for Premium' })

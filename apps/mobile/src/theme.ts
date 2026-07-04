@@ -39,7 +39,9 @@ export const text = {
   title: { fontSize: 16, fontFamily: fonts.semibold, color: colors.ink, letterSpacing: -0.1 },
   body: { fontSize: 15, fontFamily: fonts.regular, color: colors.ink600, lineHeight: 22 },
   label: { fontSize: 13, fontFamily: fonts.medium, color: colors.ink400 },
-  caption: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.ink300, lineHeight: 18 },
+  // ink400 (not ink300): captions must stay readable — light grey on white
+  // fails contrast and reads as unfinished.
+  caption: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.ink400, lineHeight: 18 },
   section: {
     fontSize: 12,
     fontFamily: fonts.semibold,
