@@ -1,8 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { TtlCache } from '../../common/utils/ttl-cache';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { CreateCareerDto } from './dto/create-career.dto';
 import { MatchCareersDto } from './dto/match-careers.dto';
 import { computeAps } from './aps';
+
+type FullCareer = Prisma.CareerGetPayload<{
+  include: { subjectRequirements: true; programmes: { include: { requirements: true } } };
+}>;
 
 export interface CareerMatchResult {
   careerId: string;
@@ -34,6 +40,7 @@ export class CareerService {
   // ─── Admin: career database ───────────────────────────────────────────────────
 
   createCareer(dto: CreateCareerDto) {
+    this.catalogue.clear();
     return this.prisma.career.create({
       data: {
         title: dto.title,
@@ -56,11 +63,18 @@ export class CareerService {
     });
   }
 
+  // The career catalogue (100 careers + requirements + programmes) is the same
+  // for everyone and only changes on reseed — cache it so every Career-tab
+  // visit stops re-reading ~1,500 rows.
+  private readonly catalogue = new TtlCache<unknown>(10 * 60 * 1000);
+
   listCareers() {
-    return this.prisma.career.findMany({
-      orderBy: { title: 'asc' },
-      include: { subjectRequirements: true, programmes: true },
-    });
+    return this.catalogue.getOrLoad('list', () =>
+      this.prisma.career.findMany({
+        orderBy: { title: 'asc' },
+        include: { subjectRequirements: true, programmes: true },
+      }),
+    );
   }
 
   async getCareer(id: string) {
@@ -109,9 +123,11 @@ export class CareerService {
     const aps = computeAps(marksInput);
     const markBySubject = new Map(marksInput.map((m) => [this.norm(m.subjectName), m.percent]));
 
-    const careers = await this.prisma.career.findMany({
-      include: { subjectRequirements: true, programmes: { include: { requirements: true } } },
-    });
+    const careers = (await this.catalogue.getOrLoad('full', () =>
+      this.prisma.career.findMany({
+        include: { subjectRequirements: true, programmes: { include: { requirements: true } } },
+      }),
+    )) as FullCareer[];
 
     const results: CareerMatchResult[] = careers.map((career) => {
       const unmet = career.subjectRequirements.filter(

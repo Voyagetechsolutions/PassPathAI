@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { KnowledgeSourceType, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { TtlCache } from '../../common/utils/ttl-cache';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { StorageService } from '../../infra/storage/storage.service';
 import { ImportCurriculumDto } from './dto/import-curriculum.dto';
@@ -24,6 +25,9 @@ export interface UploadedFile {
 @Injectable()
 export class CurriculumService {
   private readonly logger = new Logger(CurriculumService.name);
+  // Subjects/topic trees are identical for every student and change only via
+  // admin ingestion — cache hot reads for 10 minutes, cleared on any write.
+  private readonly cache = new TtlCache<unknown>(10 * 60 * 1000);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -33,23 +37,27 @@ export class CurriculumService {
   // ─── Read ──────────────────────────────────────────────────────────────────
 
   async listSubjects(grade?: number) {
-    return this.prisma.subject.findMany({
-      where: grade ? { grade } : undefined,
-      orderBy: [{ grade: 'asc' }, { name: 'asc' }],
-      select: { id: true, name: true, code: true, grade: true, weighting: true },
-    });
+    return this.cache.getOrLoad(`subjects:${grade ?? 'all'}`, () =>
+      this.prisma.subject.findMany({
+        where: grade ? { grade } : undefined,
+        orderBy: [{ grade: 'asc' }, { name: 'asc' }],
+        select: { id: true, name: true, code: true, grade: true, weighting: true },
+      }),
+    );
   }
 
   async getSubjectTree(id: string) {
-    const subject = await this.prisma.subject.findUnique({
-      where: { id },
-      include: {
-        topics: {
-          orderBy: { orderIndex: 'asc' },
-          include: { subtopics: { orderBy: { orderIndex: 'asc' } } },
+    const subject = await this.cache.getOrLoad(`tree:${id}`, () =>
+      this.prisma.subject.findUnique({
+        where: { id },
+        include: {
+          topics: {
+            orderBy: { orderIndex: 'asc' },
+            include: { subtopics: { orderBy: { orderIndex: 'asc' } } },
+          },
         },
-      },
-    });
+      }),
+    );
     if (!subject) {
       throw new NotFoundException('Subject not found');
     }
@@ -59,6 +67,7 @@ export class CurriculumService {
   // ─── Admin: single-entity creation ───────────────────────────────────────────
 
   createSubject(dto: CreateSubjectDto) {
+    this.cache.clear();
     return this.prisma.subject.create({
       data: {
         name: dto.name,
@@ -70,6 +79,7 @@ export class CurriculumService {
   }
 
   async createTopic(dto: CreateTopicDto) {
+    this.cache.clear();
     await this.assertExists('subject', dto.subjectId);
     return this.prisma.topic.create({
       data: {
@@ -83,6 +93,7 @@ export class CurriculumService {
   }
 
   async createSubtopic(dto: CreateSubtopicDto) {
+    this.cache.clear();
     await this.assertExists('topic', dto.topicId);
     return this.prisma.subtopic.create({
       data: { topicId: dto.topicId, title: dto.title, orderIndex: dto.orderIndex ?? 0 },
@@ -96,6 +107,7 @@ export class CurriculumService {
    * topic tree is fully replaced with the supplied structure.
    */
   async importCurriculum(dto: ImportCurriculumDto): Promise<{ subjects: number; topics: number }> {
+    this.cache.clear();
     let topicCount = 0;
     await this.prisma.$transaction(async (tx) => {
       for (const s of dto.subjects) {

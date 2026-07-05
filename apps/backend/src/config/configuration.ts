@@ -66,11 +66,25 @@ const splitCsv = (value?: string): string[] =>
     .map((v) => v.trim())
     .filter(Boolean);
 
+// Production default: only our own web origins may make browser calls to the
+// API (the mobile app is unaffected — native requests don't send an Origin).
+// CORS_ORIGINS overrides; outside production everything stays open for dev.
+const PROD_ORIGINS = [
+  'https://www.passpathai.com',
+  'https://passpathai.com',
+  'https://passpathai-production.up.railway.app',
+];
+
 export default (): AppConfig => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '3000', 10),
   apiPrefix: process.env.API_PREFIX ?? 'api',
-  corsOrigins: splitCsv(process.env.CORS_ORIGINS),
+  corsOrigins:
+    splitCsv(process.env.CORS_ORIGINS).length > 0
+      ? splitCsv(process.env.CORS_ORIGINS)
+      : (process.env.NODE_ENV ?? 'development') === 'production'
+        ? PROD_ORIGINS
+        : [],
   database: {
     url: process.env.DATABASE_URL ?? '',
   },
