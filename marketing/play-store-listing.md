@@ -65,6 +65,23 @@ Everything to copy-paste into the Google Play Console. Work top to bottom.
 > marked mock exams.
 >
 > Built in South Africa 🇿🇦 for South African learners.
+>
+> SOURCES & DISCLAIMER
+> Past exam papers and marking guidelines in PassPath are public examination
+> resources originally published by the South African Department of Basic
+> Education (DBE). Official source: https://www.education.gov.za (National
+> Senior Certificate examinations section). University admission (APS)
+> requirements are guidance estimates — always confirm with each university's
+> official prospectus.
+>
+> PassPath is an independent study app. It is NOT affiliated with, endorsed
+> by, or representing the Department of Basic Education or any other
+> government entity.
+
+**⚠️ Play policy note (learned the hard way):** any mention of DBE/government
+content requires the official source link + the independence disclaimer above
+in the description, or the app is rejected under the Misleading Claims policy.
+Keep this section in every future description edit.
 
 ## 4. Graphics
 

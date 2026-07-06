@@ -29,7 +29,7 @@ export default function PastPapersScreen() {
   }
 
   return (
-    <Screen title="Past papers" subtitle="Download exam papers and memos to practise with." onBack={() => router.back()}>
+    <Screen title="Past papers" subtitle="Public DBE examination resources (education.gov.za). PassPath is independent and not affiliated with any government entity." onBack={() => router.back()}>
       {!data || data.length === 0 ? (
         <EmptyState title="No past papers yet" message="Papers added by your school will appear here." />
       ) : (
