@@ -130,9 +130,9 @@ export class AdminService {
     const freeTrial = this.config.get('freeTrial', { infer: true });
     const paystack = this.config.get('paystack', { infer: true });
     const stripe = this.config.get('stripe', { infer: true });
-    const billing = stripe.secretKey
-      ? { provider: 'Stripe', amountCents: stripe.monthlyAmountCents, configured: true }
-      : { provider: 'Paystack', amountCents: paystack.monthlyAmountCents, configured: Boolean(paystack.secretKey) };
+    const billing = paystack.secretKey
+      ? { provider: 'Paystack', amountCents: paystack.monthlyAmountCents, configured: true }
+      : { provider: 'Stripe', amountCents: stripe.monthlyAmountCents, configured: Boolean(stripe.secretKey) };
 
     return {
       content: { subjects, questions, lessons, careers, pastPapers },

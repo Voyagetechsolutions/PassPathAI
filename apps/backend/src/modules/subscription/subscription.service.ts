@@ -33,9 +33,13 @@ export class SubscriptionService {
     private readonly stripe: StripeService,
   ) {}
 
-  /** Stripe when configured, else Paystack — one active provider at a time. */
+  /**
+   * Paystack is the primary provider (South-Africa-native: cards, instant EFT,
+   * SnapScan, recurring billing). Stripe stays wired as an optional fallback but
+   * is only used when Paystack is not configured.
+   */
   private get monthlyAmountCents(): number {
-    return this.stripe.isConfigured ? this.stripe.monthlyAmountCents : this.paystack.monthlyAmountCents;
+    return this.paystack.isConfigured ? this.paystack.monthlyAmountCents : this.stripe.monthlyAmountCents;
   }
 
   private requireStudent(studentId: string | undefined): string {
@@ -79,28 +83,29 @@ export class SubscriptionService {
   async checkout(studentId: string | undefined, email: string, callbackUrl: string): Promise<{ authorizationUrl: string }> {
     const sid = this.requireStudent(studentId);
 
-    if (this.stripe.isConfigured) {
-      const joiner = callbackUrl.includes('?') ? '&' : '?';
-      const { url } = await this.stripe.createCheckoutSession({
+    // Paystack first (primary SA provider); Stripe only if Paystack is unset.
+    if (this.paystack.isConfigured) {
+      const reference = `sub-${sid}-${Date.now()}`;
+      const result = await this.paystack.initializeTransaction({
         email,
-        studentId: sid,
-        successUrl: `${callbackUrl}${joiner}paid=1`,
-        cancelUrl: callbackUrl,
+        reference,
+        callbackUrl,
+        metadata: { studentId: sid },
       });
-      return { authorizationUrl: url };
+      return { authorizationUrl: result.authorizationUrl };
     }
 
-    if (!this.paystack.isConfigured) {
+    if (!this.stripe.isConfigured) {
       throw new BadRequestException('Payments are not set up yet — check back soon.');
     }
-    const reference = `sub-${sid}-${Date.now()}`;
-    const result = await this.paystack.initializeTransaction({
+    const joiner = callbackUrl.includes('?') ? '&' : '?';
+    const { url } = await this.stripe.createCheckoutSession({
       email,
-      reference,
-      callbackUrl,
-      metadata: { studentId: sid },
+      studentId: sid,
+      successUrl: `${callbackUrl}${joiner}paid=1`,
+      cancelUrl: callbackUrl,
     });
-    return { authorizationUrl: result.authorizationUrl };
+    return { authorizationUrl: url };
   }
 
   async cancel(studentId: string | undefined): Promise<{ cancelAtPeriodEnd: boolean }> {
