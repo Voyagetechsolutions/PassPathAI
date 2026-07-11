@@ -47,7 +47,7 @@ Set these on Railway (service → Variables) and redeploy happens automatically:
 |---|---|---|
 | `FREE_TUTOR_MESSAGES` | Free-trial tutor messages (lifetime) | 5 |
 | `FREE_MOCK_EXAMS` | Free-trial mock exams (lifetime) | 1 |
-| `PREMIUM_PRICE_CENTS` | Premium price, in cents | 20000 (R200) |
+| `PREMIUM_PRICE_CENTS` | Premium price, in cents | 9900 (R99) |
 | `STRIPE_SECRET_KEY` | Makes Stripe the active billing provider | — |
 | `STRIPE_WEBHOOK_SECRET` | From the Stripe webhook endpoint (whsec_…) | — |
 | `STRIPE_PRICE_ID` | Optional: use an existing Stripe Price instead of ad-hoc R200 | — |

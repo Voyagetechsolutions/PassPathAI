@@ -91,7 +91,7 @@ export default function PremiumScreen() {
       ) : (
         <Card style={{ alignItems: 'center', backgroundColor: colors.brand }}>
           <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontFamily: 'Poppins_600SemiBold' }}>PREMIUM</Text>
-          <Text style={{ color: colors.white, fontSize: 40, fontFamily: 'Poppins_700Bold', marginTop: 4 }}>{status?.priceLabel ?? 'R200/month'}</Text>
+          <Text style={{ color: colors.white, fontSize: 40, fontFamily: 'Poppins_700Bold', marginTop: 4 }}>{status?.priceLabel ?? 'R99/month'}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4 }}>Cancel any time</Text>
         </Card>
       )}
@@ -130,7 +130,7 @@ export default function PremiumScreen() {
           style={({ pressed }) => [{ backgroundColor: colors.brand, borderRadius: radius.md, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: spacing.sm }, (pressed || busy) && { opacity: 0.85 }]}
         >
           {busy ? <ActivityIndicator color={colors.white} /> : null}
-          <Text style={{ color: colors.white, fontSize: 16, fontFamily: 'Poppins_700Bold' }}>{busy ? 'Opening secure checkout…' : `Subscribe — ${status?.priceLabel ?? 'R200/month'}`}</Text>
+          <Text style={{ color: colors.white, fontSize: 16, fontFamily: 'Poppins_700Bold' }}>{busy ? 'Opening secure checkout…' : `Subscribe — ${status?.priceLabel ?? 'R99/month'}`}</Text>
         </Pressable>
       ) : (
         <Card>

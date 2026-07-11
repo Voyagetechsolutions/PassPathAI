@@ -48,7 +48,7 @@ Nothing to configure in the Vercel dashboard; the file does it all.
 Set later when ready:
 - `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` — from your Paystack dashboard.
   Webhook URL: `https://<your-domain>/api/subscription/webhook`.
-- `PAYSTACK_MONTHLY_AMOUNT_CENTS` — defaults to `20000` (R200/month) in code.
+- `PREMIUM_PRICE_CENTS` — defaults to `9900` (R99/month) in code.
 
 ## Still pending
 

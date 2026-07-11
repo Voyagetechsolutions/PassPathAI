@@ -139,15 +139,16 @@ export default (): AppConfig => ({
     secretKey: process.env.PAYSTACK_SECRET_KEY ?? '',
     publicKey: process.env.PAYSTACK_PUBLIC_KEY ?? '',
     planCode: process.env.PAYSTACK_PLAN_CODE ?? '',
-    monthlyAmountCents: parseInt(process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '20000', 10),
+    monthlyAmountCents: parseInt(
+      process.env.PREMIUM_PRICE_CENTS ?? process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '9900',
+      10,
+    ),
   },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY ?? '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
     priceId: process.env.STRIPE_PRICE_ID ?? '',
-    monthlyAmountCents: parseInt(
-      process.env.PREMIUM_PRICE_CENTS ?? process.env.PAYSTACK_MONTHLY_AMOUNT_CENTS ?? '20000',
-      10,
-    ),
+    // R99/month launch price (PREMIUM_PRICE_CENTS overrides).
+    monthlyAmountCents: parseInt(process.env.PREMIUM_PRICE_CENTS ?? '9900', 10),
   },
 });

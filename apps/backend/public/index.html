@@ -178,6 +178,20 @@
     font-size: 13px; color: rgba(255,255,255,0.85);
   }
 
+  /* Comparison table */
+  .compare-wrap { overflow-x: auto; }
+  .compare { width: 100%; border-collapse: collapse; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .compare th, .compare td { text-align: left; padding: 15px 18px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+  .compare thead th { background: var(--canvas); font-size: 13px; font-weight: 700; color: var(--ink-600); }
+  .compare thead th.us { color: var(--green); }
+  .compare td.us, .compare th.us { background: var(--green-tint); }
+  .compare tbody tr:last-child td { border-bottom: 0; }
+  .compare td:first-child { color: var(--ink-600); }
+  .compare .yes { color: var(--green-dark); font-weight: 600; }
+  .compare .no { color: var(--ink-300); }
+  .compare .mid { color: var(--warn); font-weight: 600; }
+  @media (max-width: 620px) { .compare th, .compare td { padding: 11px 12px; font-size: 13px; } }
+
   /* Launch countdown */
   .cd-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7CE2A8; margin-bottom: 14px; }
   .cd-grid { display: flex; justify-content: center; gap: 12px; margin-bottom: 26px; }
@@ -228,7 +242,7 @@
     </a>
     <div class="nav-links">
       <a href="#features">What it does</a>
-      <a href="#how">How it works</a>
+      <a href="#compare">Why PassPath</a>
       <a href="#pricing">Pricing</a>
     </div>
     <a class="btn btn-primary" href="#early-access">Get early access</a>
@@ -392,7 +406,7 @@
       <div class="price-card highlight">
         <span class="plan-badge">RECOMMENDED</span>
         <h3>PREMIUM</h3>
-        <div class="price-amount">R200<span> /month</span></div>
+        <div class="price-amount">R99<span> /month</span></div>
         <ul class="price-list">
           <li>Everything in Free</li>
           <li>Unlimited tutor conversations</li>
@@ -403,7 +417,33 @@
         <a class="btn btn-navy" href="premium.html">Get Premium</a>
       </div>
     </div>
-    <p class="price-note">That's less than a single hour with a private tutor — for a whole month.</p>
+    <p class="price-note">Under R100 a month. A private tutor charges more than that per hour.</p>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Why PassPath</h2>
+      <p>Past papers are everywhere. A tutor that actually teaches you isn't.</p>
+    </div>
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th>What you get</th><th class="us">PassPath</th><th>Other matric apps</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AI tutor that teaches, topic by topic</td><td class="us"><span class="yes">Built in — the whole point</span></td><td><span class="mid">Paid add-on, if any</span></td></tr>
+          <tr><td>Explains your way &amp; remembers how you learn</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td></tr>
+          <tr><td>“Explain it back” — scores your understanding /10</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td></tr>
+          <tr><td>Real DBE past papers &amp; memos</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
+          <tr><td>Mock exams marked with feedback</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
+          <tr><td>Career match + live APS + university requirements</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td></tr>
+          <tr><td>Unlimited AI tutoring price</td><td class="us"><span class="yes">R99/month</span></td><td><span class="mid">Extra on top</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="price-note">Everyone hands you exam papers. PassPath is the one that teaches you to pass them.</p>
   </div>
 </section>
 

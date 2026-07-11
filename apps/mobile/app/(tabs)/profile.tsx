@@ -216,7 +216,7 @@ export default function ProfileTab() {
             <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>
               {subscription?.isPremium
                 ? subscription.cancelAtPeriodEnd ? 'Cancels at the end of this period' : 'Unlimited tutor, mock exams & more'
-                : `Unlimited AI tutoring & mock exams — ${subscription?.priceLabel ?? 'R200/month'}`}
+                : `Unlimited AI tutoring & mock exams — ${subscription?.priceLabel ?? 'R99/month'}`}
             </Text>
           </View>
           <ChevronRight color="rgba(255,255,255,0.7)" />
