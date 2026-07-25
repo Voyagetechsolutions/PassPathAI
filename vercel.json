@@ -3,8 +3,8 @@
   "buildCommand": "",
   "outputDirectory": "apps/backend/public",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://passpathai-production.up.railway.app/api/:path*" },
-    { "source": "/docs", "destination": "https://passpathai-production.up.railway.app/docs" },
-    { "source": "/docs/:path*", "destination": "https://passpathai-production.up.railway.app/docs/:path*" }
+    { "source": "/api/:path*", "destination": "https://api.passpathai.com/api/:path*" },
+    { "source": "/docs", "destination": "https://api.passpathai.com/docs" },
+    { "source": "/docs/:path*", "destination": "https://api.passpathai.com/docs/:path*" }
   ]
 }
