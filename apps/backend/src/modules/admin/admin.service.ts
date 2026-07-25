@@ -106,7 +106,7 @@ export class AdminService {
         this.prisma.examAttempt.count(),
       ]);
 
-    // Subscriptions fail open: the table may not exist yet (Neon storage cap).
+    // Subscriptions fail open during a partially migrated database deployment.
     let activeSubscriptions = 0;
     try {
       activeSubscriptions = await this.prisma.subscription.count({
@@ -116,7 +116,7 @@ export class AdminService {
       this.logger.warn('Subscription table unavailable — reporting 0 active subscriptions');
     }
 
-    // Database size, to watch the Neon free-tier 512MB cap.
+    // Database size for production capacity monitoring.
     let dbSizeMb: number | null = null;
     try {
       const rows = await this.prisma.$queryRaw<Array<{ size: bigint }>>`

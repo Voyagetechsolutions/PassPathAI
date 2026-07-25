@@ -1,4 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
+import { hashPassword } from '../src/modules/auth/password';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,7 @@ const prisma = new PrismaClient();
  * sample performance data. Real curriculum/content is added by an admin afterwards.
  */
 async function main(): Promise<void> {
+  const passwordHash = await hashPassword(process.env.DEMO_PASSWORD ?? 'passpath-demo');
   // Truncate every application table (keep Prisma's migration history).
   const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
     SELECT tablename FROM pg_tables
@@ -24,7 +26,7 @@ async function main(): Promise<void> {
   const student = await prisma.user.create({
     data: {
       email: 'student@demo.passpath.app',
-      firebaseUid: 'demo-student',
+      passwordHash,
       role: Role.student,
       emailVerified: true,
       studentProfile: { create: { firstName: 'Demo', surname: 'Student', grade: 10 } },
@@ -35,7 +37,7 @@ async function main(): Promise<void> {
   const parent = await prisma.user.create({
     data: {
       email: 'parent@demo.passpath.app',
-      firebaseUid: 'demo-parent',
+      passwordHash,
       role: Role.parent,
       emailVerified: true,
       parentProfile: { create: { firstName: 'Demo', surname: 'Parent' } },
@@ -46,7 +48,7 @@ async function main(): Promise<void> {
   await prisma.user.create({
     data: {
       email: 'admin@demo.passpath.app',
-      firebaseUid: 'demo-admin',
+      passwordHash,
       role: Role.admin,
       emailVerified: true,
     },

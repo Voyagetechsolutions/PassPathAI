@@ -33,6 +33,9 @@ export class StorageService {
     this.localDir = storage.localDir;
 
     if (this.driver === 's3') {
+      if (!this.bucket) {
+        throw new Error('AWS_S3_BUCKET is required when STORAGE_DRIVER=s3');
+      }
       this.s3 = new S3Client({
         region: storage.region,
         endpoint: storage.endpoint,

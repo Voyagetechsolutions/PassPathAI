@@ -1,13 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Province, Role } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 
 /**
- * Registration completes a Firebase sign-up by provisioning the local account.
- * The client first creates the Firebase user (email/password) and passes the
- * resulting ID token in the Authorization header.
+ * Creates a credential and profile directly in the application's PostgreSQL database.
  */
 export class RegisterDto {
+  @ApiProperty({ example: 'thabo@example.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
   @ApiProperty({ enum: Role, default: Role.student })
   @IsEnum(Role)
   role!: Role;

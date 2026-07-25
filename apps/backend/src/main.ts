@@ -27,18 +27,12 @@ async function bootstrap(): Promise<void> {
   app.set('trust proxy', 1);
   // Gzip JSON/HTML responses — tutor replies and career lists shrink ~5-10x.
   app.use(compression());
-  // Extend the default CSP so the static admin page can call Firebase Auth
-  // (email/password sign-in) directly from the browser.
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-          'connect-src': [
-            "'self'",
-            'https://identitytoolkit.googleapis.com',
-            'https://securetoken.googleapis.com',
-          ],
+          'connect-src': ["'self'"],
         },
       },
     }),

@@ -1,11 +1,12 @@
 import { KnowledgeSourceType, PrismaClient, Role } from '@prisma/client';
+import { hashPassword } from '../src/modules/auth/password';
 
 const prisma = new PrismaClient();
 
 /**
  * Demo seed: three ready-to-use accounts plus enough data to make the dashboards
  * meaningful. Pairs with dev auth (ENABLE_DEV_AUTH=true) so you can log in with a
- * password and no Firebase project. Idempotent — safe to re-run.
+ * password. Idempotent — safe to re-run.
  *
  *   student@demo.passpath.app  (student, Grade 10)
  *   parent@demo.passpath.app   (parent, linked to the student)
@@ -13,6 +14,7 @@ const prisma = new PrismaClient();
  *   password for all:          $DEMO_PASSWORD (default "passpath-demo")
  */
 async function main(): Promise<void> {
+  const passwordHash = await hashPassword(process.env.DEMO_PASSWORD ?? 'passpath-demo');
   // ── Curriculum scaffold ──────────────────────────────────────────────────
   const subject = await prisma.subject.upsert({
     where: { code: 'MATH-G10' },
@@ -46,10 +48,10 @@ async function main(): Promise<void> {
   // ── Accounts ─────────────────────────────────────────────────────────────
   const admin = await prisma.user.upsert({
     where: { email: 'admin@demo.passpath.app' },
-    update: { role: Role.admin, isActive: true },
+    update: { role: Role.admin, isActive: true, passwordHash },
     create: {
       email: 'admin@demo.passpath.app',
-      firebaseUid: 'demo-admin',
+      passwordHash,
       role: Role.admin,
       emailVerified: true,
     },
@@ -91,10 +93,10 @@ async function main(): Promise<void> {
 
   const studentUser = await prisma.user.upsert({
     where: { email: 'student@demo.passpath.app' },
-    update: { role: Role.student, isActive: true },
+    update: { role: Role.student, isActive: true, passwordHash },
     create: {
       email: 'student@demo.passpath.app',
-      firebaseUid: 'demo-student',
+      passwordHash,
       role: Role.student,
       emailVerified: true,
       studentProfile: {
@@ -110,10 +112,10 @@ async function main(): Promise<void> {
 
   const parentUser = await prisma.user.upsert({
     where: { email: 'parent@demo.passpath.app' },
-    update: { role: Role.parent, isActive: true },
+    update: { role: Role.parent, isActive: true, passwordHash },
     create: {
       email: 'parent@demo.passpath.app',
-      firebaseUid: 'demo-parent',
+      passwordHash,
       role: Role.parent,
       emailVerified: true,
       parentProfile: { create: { firstName: 'Naledi', surname: 'Mokoena' } },

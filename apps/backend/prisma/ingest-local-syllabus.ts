@@ -25,21 +25,21 @@ const GRADE = 12;
 // Same canonical codes as ingest-local-pastpapers.ts, plus subjects that only
 // appear here (no past papers supplied for them).
 const SUBJECT_MAP: Array<[string, string]> = [
-  ['english fal', 'ENFAL-G10'],
-  ['english hl', 'ENG-HL-G10'],
-  ['computer applications', 'CAT-G10'],
-  ['mathematical literacy', 'MLIT-G10'],
-  ['mathematics', 'MATH-G10'],
-  ['maths', 'MATH-G10'],
-  ['physical science', 'PHSC-G10'],
-  ['life science', 'LIFE-G10'],
-  ['life orientation', 'LFOR-G10'],
-  ['geography', 'GEOG-G10'],
-  ['history', 'HIST-G10'],
-  ['accounting', 'ACCN-G10'],
-  ['business studies', 'BSTD-G10'],
-  ['economics', 'ECON-G10'],
-  ['tourism', 'TOUR-G10'],
+  ['english fal', 'ENFAL-G12'],
+  ['english hl', 'ENG-HL-G12'],
+  ['computer applications', 'CAT-G12'],
+  ['mathematical literacy', 'MLIT-G12'],
+  ['mathematics', 'MATH-G12'],
+  ['maths', 'MATH-G12'],
+  ['physical science', 'PHSC-G12'],
+  ['life science', 'LIFE-G12'],
+  ['life orientation', 'LFOR-G12'],
+  ['geography', 'GEOG-G12'],
+  ['history', 'HIST-G12'],
+  ['accounting', 'ACCN-G12'],
+  ['business studies', 'BSTD-G12'],
+  ['economics', 'ECON-G12'],
+  ['tourism', 'TOUR-G12'],
 ];
 
 function matchSubject(filename: string): string | null {

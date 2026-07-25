@@ -52,8 +52,11 @@ describe('AiService', () => {
   });
 
   it('teaches within grade/subject scope when no source matches (hybrid fallback)', async () => {
-    // Retrieved chunk is below the similarity threshold → no grounded source.
-    prisma.$queryRaw.mockResolvedValue([{ id: 'c1', content: 'irrelevant', score: 0.15 }]);
+    // Vector hit is below the similarity threshold, and the lexical fallback
+    // (second $queryRaw) finds no keyword match either → no grounded source.
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: 'c1', content: 'irrelevant', score: 0.15 }])
+      .mockResolvedValueOnce([]);
     openai.chat.mockResolvedValue({
       content: 'Photosynthesis is how plants convert sunlight, water and CO₂ into glucose.',
       model: 'gpt-4o-mini',

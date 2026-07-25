@@ -27,6 +27,7 @@ export class OpenAiService {
   private readonly usingExternalChatProvider: boolean;
   private readonly defaultChatModel: string;
   private readonly defaultEmbeddingModel: string;
+  private readonly embeddingDim: number;
   /** Used when the external chat provider fails and we fail over to OpenAI. */
   private static readonly FALLBACK_CHAT_MODEL = 'gpt-4o-mini';
 
@@ -34,6 +35,7 @@ export class OpenAiService {
     const openai = this.config.get('openai', { infer: true });
     this.defaultChatModel = openai.chatModel;
     this.defaultEmbeddingModel = openai.embeddingModel;
+    this.embeddingDim = openai.embeddingDim;
     this.usingExternalChatProvider = Boolean(openai.chatBaseUrl);
     if (openai.chatApiKey) {
       this.chatClient = new OpenAI({ apiKey: openai.chatApiKey, baseURL: openai.chatBaseUrl });
@@ -101,6 +103,7 @@ export class OpenAiService {
     const res = await this.requireEmbed().embeddings.create({
       model: model ?? this.defaultEmbeddingModel,
       input: texts,
+      dimensions: this.embeddingDim,
     });
     return res.data.map((d) => d.embedding);
   }

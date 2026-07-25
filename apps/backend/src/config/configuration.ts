@@ -9,12 +9,7 @@ export interface AppConfig {
   corsOrigins: string[];
   database: { url: string };
   redis: { host: string; port: number; password?: string };
-  firebase: {
-    projectId: string;
-    clientEmail: string;
-    privateKey: string;
-    serviceAccountPath?: string;
-  };
+  auth: { tokenSecret: string; tokenTtlSeconds: number };
   openai: {
     apiKey: string;
     chatModel: string;
@@ -93,18 +88,15 @@ export default (): AppConfig => ({
     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
   },
-  firebase: {
-    projectId: process.env.FIREBASE_PROJECT_ID ?? '',
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
-    // Allow literal "\n" in env to represent newlines.
-    privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
-    serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH || undefined,
+  auth: {
+    tokenSecret: process.env.AUTH_TOKEN_SECRET ?? '',
+    tokenTtlSeconds: parseInt(process.env.AUTH_TOKEN_TTL_SECONDS ?? '604800', 10),
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY ?? '',
     chatModel: process.env.AI_CHAT_MODEL ?? process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini',
     embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small',
-    embeddingDim: parseInt(process.env.OPENAI_EMBEDDING_DIM ?? '1536', 10),
+    embeddingDim: parseInt(process.env.OPENAI_EMBEDDING_DIM ?? '256', 10),
     chatApiKey: process.env.AI_API_KEY ?? process.env.OPENAI_API_KEY ?? '',
     chatBaseUrl: process.env.AI_BASE_URL || undefined,
   },

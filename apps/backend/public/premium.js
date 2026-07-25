@@ -1,11 +1,9 @@
-/* PassPath Premium purchase page. Signs into the student's own account
- * (Firebase Auth REST — the web apiKey is public by design), then starts a
+/* PassPath Premium purchase page. Signs into the student's own account, then starts a
  * Paystack checkout via the backend. Paystack redirects back here after
  * payment; the backend webhook is what actually activates Premium. */
 (function () {
   'use strict';
 
-  var FIREBASE_API_KEY = 'AIzaSyCa9gVDjyQUnakTkR4Wnj9uiLLxS45u_uo';
   var API = '/api';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -42,17 +40,17 @@
   function signIn() {
     $('login-err').style.display = 'none';
     $('login-btn').textContent = 'Signing in…';
-    fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FIREBASE_API_KEY, {
+    fetch(API + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value, returnSecureToken: true }),
+      body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value }),
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (!data.idToken) { throw new Error('Wrong email or password.'); }
-        token = data.idToken;
+        if (!data.token) { throw new Error(Array.isArray(data.message) ? data.message[0] : (data.message || 'Wrong email or password.')); }
+        token = data.token;
         sessionStorage.setItem('pp.premium.token', token);
-        loadStatus(data.email);
+        loadStatus(data.user.email);
       })
       .catch(function (e) { showErr('login-err', e.message || 'Sign-in failed.'); })
       .finally(function () { $('login-btn').textContent = 'Sign in'; });

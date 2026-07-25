@@ -1,11 +1,7 @@
-/* PassPath admin dashboard.
- * Signs in with Firebase Auth (email/password REST API — the web apiKey is
- * public by design) and calls the backend /api/admin endpoints, which only
- * authorised admin emails may use. */
+/* PassPath admin dashboard. Authentication is handled by the PassPath API. */
 (function () {
   'use strict';
 
-  var FIREBASE_API_KEY = 'AIzaSyCa9gVDjyQUnakTkR4Wnj9uiLLxS45u_uo';
   var API = '/api';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -24,18 +20,18 @@
     var err = $('login-err');
     err.style.display = 'none';
     $('login-btn').textContent = 'Signing in…';
-    fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FIREBASE_API_KEY, {
+    fetch(API + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value, returnSecureToken: true }),
+      body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value }),
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (!data.idToken) {
-          throw new Error(data.error && data.error.message === 'INVALID_LOGIN_CREDENTIALS' ? 'Wrong email or password.' : 'Sign-in failed.');
+        if (!data.token) {
+          throw new Error(Array.isArray(data.message) ? data.message[0] : (data.message || 'Sign-in failed.'));
         }
-        token = data.idToken;
-        email = data.email;
+        token = data.token;
+        email = data.user.email;
         sessionStorage.setItem('pp.admin.token', token);
         sessionStorage.setItem('pp.admin.email', email);
         show('dash');

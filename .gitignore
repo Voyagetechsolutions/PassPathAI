@@ -15,13 +15,14 @@ build/
 .env.local
 .env.*.local
 *-service-account.json
-firebase-admin.json
 
 # Prisma
 apps/backend/prisma/*.db
 
 # Local content library (590MB of PDFs — synced to object storage, not git)
 apps/backend/storage/
+# PDF library on the production server (mounted into the backend container)
+/storage/
 
 # Logs
 logs/

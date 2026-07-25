@@ -179,16 +179,25 @@ export class LessonsService {
     try {
       const vector = await this.openai.embedOne(`${subjectName} ${topicTitle}`.trim());
       const literal = `[${vector.join(',')}]`;
-      return await this.prisma.$queryRaw<Array<{ content: string }>>(Prisma.sql`
+      const rows = await this.prisma.$queryRaw<Array<{ content: string }>>(Prisma.sql`
         SELECT content FROM knowledge_chunks
         WHERE embedding IS NOT NULL AND subject_code = ${subjectCode}
         ORDER BY embedding <=> ${literal}::vector
         LIMIT 8
       `);
+      if (rows.length > 0) return rows;
     } catch (e) {
       this.logger.warn(`Lesson grounding retrieval failed: ${(e as Error).message}`);
-      return [];
     }
+    const query = `${subjectName} ${topicTitle}`.trim();
+    return this.prisma.$queryRaw<Array<{ content: string }>>(Prisma.sql`
+      WITH search AS (SELECT websearch_to_tsquery('simple', ${query}) AS terms)
+      SELECT content FROM knowledge_chunks, search
+      WHERE subject_code = ${subjectCode}
+        AND to_tsvector('simple', content) @@ search.terms
+      ORDER BY ts_rank_cd(to_tsvector('simple', content), search.terms) DESC
+      LIMIT 8
+    `);
   }
 
   private present(lesson: {

@@ -137,6 +137,27 @@ export class AiService {
     `);
   }
 
+  /** Language-neutral full-text fallback for newly ingested chunks that have
+   * not been embedded yet. This keeps curriculum retrieval available without
+   * exporting the whole document corpus to an external embedding service. */
+  private async retrieveLexical(
+    query: string,
+    topK: number,
+    filters: { subjectCode?: string },
+  ): Promise<RetrievedChunk[]> {
+    const subject = filters.subjectCode
+      ? Prisma.sql`AND subject_code = ${filters.subjectCode}`
+      : Prisma.empty;
+    return this.prisma.$queryRaw<RetrievedChunk[]>(Prisma.sql`
+      WITH search AS (SELECT websearch_to_tsquery('simple', ${query}) AS terms)
+      SELECT id, content, 0.5::float8 AS score
+      FROM knowledge_chunks, search
+      WHERE to_tsvector('simple', content) @@ search.terms ${subject}
+      ORDER BY ts_rank_cd(to_tsvector('simple', content), search.terms) DESC
+      LIMIT ${topK}
+    `);
+  }
+
   // ─── Ask (the full grounded pipeline) ────────────────────────────────────────
 
   async ask(studentId: string | undefined, dto: AskDto): Promise<AskResult> {
@@ -147,7 +168,10 @@ export class AiService {
 
     const queryVector = await this.openai.embedOne(dto.question);
     const retrieved = await this.retrieve(queryVector, topK, { subjectCode: dto.subjectCode });
-    const grounded = retrieved.filter((c) => c.score >= minSimilarity);
+    let grounded = retrieved.filter((c) => c.score >= minSimilarity);
+    if (grounded.length === 0) {
+      grounded = await this.retrieveLexical(dto.question, topK, { subjectCode: dto.subjectCode });
+    }
 
     // 1) GROUNDED path — relevant CAPS material was found. Answer strictly from it.
     if (grounded.length > 0) {
@@ -203,7 +227,10 @@ export class AiService {
     const { subject } = topic;
 
     const vector = await this.openai.embedOne(`${subject.name}: ${topic.title}`);
-    const retrieved = await this.retrieve(vector, 6, { subjectCode: subject.code });
+    let retrieved = await this.retrieve(vector, 6, { subjectCode: subject.code });
+    if (retrieved.length === 0) {
+      retrieved = await this.retrieveLexical(`${subject.name} ${topic.title}`, 6, { subjectCode: subject.code });
+    }
     const grounded = retrieved.length > 0;
     const context = grounded
       ? retrieved.map((c, i) => `[${i + 1}] ${c.content}`).join('\n\n')
@@ -237,7 +264,10 @@ export class AiService {
     }
     try {
       const vector = await this.openai.embedOne(query);
-      const retrieved = await this.retrieve(vector, 6, { subjectCode });
+      let retrieved = await this.retrieve(vector, 6, { subjectCode });
+      if (retrieved.length === 0) {
+        retrieved = await this.retrieveLexical(query, 6, { subjectCode });
+      }
       if (retrieved.length === 0) {
         return { context: '(No specific source found — teach from established CAPS curriculum knowledge.)', grounded: false };
       }

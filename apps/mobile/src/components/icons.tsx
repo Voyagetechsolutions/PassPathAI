@@ -141,6 +141,14 @@ export const User = (p: IconProps) => (
   </S>
 );
 
+export const Users = (p: IconProps) => (
+  <S {...p}>
+    <Circle cx={9} cy={8} r={3} />
+    <Path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
+    <Path d="M15 5.5a3 3 0 0 1 0 5.5M16.5 14a5 5 0 0 1 4 5" />
+  </S>
+);
+
 export const Flame = (p: IconProps) => (
   <S {...p}>
     <Path d="M12 3c1 3 4 4 4 8a4 4 0 0 1-8 0c0-1.5.6-2.4 1.3-3.2C10 9 11.5 8 12 3Z" />

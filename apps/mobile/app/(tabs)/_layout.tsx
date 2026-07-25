@@ -2,7 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { useAuth } from '../../src/lib/auth';
 import { useApi } from '../../src/lib/use-api';
 import { Loading } from '../../src/components/ui';
-import { Home, Book, Clipboard, Compass, User } from '../../src/components/icons';
+import { Home, Book, Clipboard, Compass, User, Users } from '../../src/components/icons';
 import { colors } from '../../src/theme';
 import type { ProfileSummary } from '../../src/lib/types';
 
@@ -32,6 +32,12 @@ export default function TabsLayout() {
           height: 62,
           paddingTop: 6,
           paddingBottom: 8,
+          position: 'absolute',
+          bottom: 12,
+          left: 12,
+          right: 12,
+          borderRadius: 20,
+          overflow: 'hidden',
         },
         tabBarLabelStyle: { fontSize: 11, fontFamily: 'Poppins_600SemiBold' },
       }}
@@ -50,7 +56,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="career"
-        options={{ title: 'Career', tabBarIcon: ({ color }) => <Compass color={color} size={22} /> }}
+        options={{ title: 'Career', href: null, tabBarIcon: ({ color }) => <Compass color={color} size={22} /> }}
+      />
+      <Tabs.Screen
+        name="friends"
+        options={{ title: 'Friends', tabBarIcon: ({ color }) => <Users color={color} size={22} /> }}
       />
       <Tabs.Screen
         name="profile"

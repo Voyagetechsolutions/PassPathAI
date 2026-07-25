@@ -39,12 +39,6 @@
     ],
     "extra": {
       "apiBaseUrl": "https://www.passpathai.com/api",
-      "firebase": {
-        "apiKey": "AIzaSyCa9gVDjyQUnakTkR4Wnj9uiLLxS45u_uo",
-        "authDomain": "passpath-6bb5e.firebaseapp.com",
-        "projectId": "passpath-6bb5e",
-        "appId": "1:952643270832:web:e2d4fe5cac68f969e3a375"
-      },
       "router": {},
       "eas": {
         "projectId": "dab4b9a4-fb25-4618-aca4-3ebd8229eb1c"

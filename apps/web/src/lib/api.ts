@@ -17,8 +17,7 @@ interface RequestOptions {
 }
 
 /**
- * Typed fetch wrapper around the PassPath backend. Attaches the Firebase ID
- * token as a bearer credential and normalises error envelopes.
+ * Typed fetch wrapper around the PassPath backend. Attaches the access token.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

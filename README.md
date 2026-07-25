@@ -26,7 +26,7 @@ passpath/
 
 - **Web** (`apps/web`, Next.js App Router + Tailwind): landing, login, student
   dashboard, parent dashboard (link children, view performance), admin panel
-  (stats, users, AI settings). Firebase web auth → bearer token → backend.
+  (stats, users, AI settings). PostgreSQL-backed auth → bearer token → backend.
   `npm install && npm run dev` (port 3001). Production build verified.
 - **Mobile** (`apps/mobile`, Expo Router + TS): auth gate, login, bottom tabs —
   performance dashboard, grounded AI Ask, study roadmap (today's missions),
@@ -36,7 +36,7 @@ passpath/
 
 | # | Module | Status |
 |---|--------|--------|
-| 1 | Authentication (Firebase IdP + RBAC) | ✅ implemented |
+| 1 | Authentication (PostgreSQL credentials + RBAC) | ✅ implemented |
 | 2 | Student Profile | ✅ implemented |
 | 3 | CAPS Curriculum Engine (+ ingestion + S3) | ✅ implemented |
 | 4 | Diagnostic Test Engine | ✅ implemented |
@@ -59,7 +59,7 @@ Modules are being implemented foundation-first; this README's status column trac
 ## Quick start (local)
 
 ```bash
-cp .env.example .env            # fill in Firebase + OpenAI values
+cp .env.example .env            # fill in PostgreSQL, auth-secret + AI values
 docker compose up -d db redis   # Postgres (pgvector) + Redis
 cd apps/backend
 npm install
@@ -77,8 +77,8 @@ docker compose up --build
 
 ## Authentication model
 
-Firebase is the identity provider: it owns passwords, email verification and password
-reset. The backend verifies Firebase ID tokens, provisions a local `User` row on first
+The backend owns authentication: password hashes and profiles are stored in PostgreSQL, and
+the API issues signed access tokens. Registration provisions the local `User` row and
 contact, and owns **roles / RBAC** (`student`, `parent`, `admin`). See
 `apps/backend/src/modules/auth`.
 

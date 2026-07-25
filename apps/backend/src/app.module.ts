@@ -7,13 +7,12 @@ import configuration, { AppConfig } from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
-import { FirebaseModule } from './infra/firebase/firebase.module';
 import { StorageModule } from './infra/storage/storage.module';
 import { OpenAiModule } from './infra/openai/openai.module';
 import { StripeModule } from './infra/stripe/stripe.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
-import { FirebaseAuthGuard } from './modules/auth/guards/firebase-auth.guard';
+import { AuthGuard } from './modules/auth/guards/auth.guard';
 import { HealthModule } from './modules/health/health.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CurriculumModule } from './modules/curriculum/curriculum.module';
@@ -35,6 +34,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { PastPapersModule } from './modules/past-papers/past-papers.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
+import { SocialModule } from './modules/social/social.module';
 
 @Module({
   imports: [
@@ -53,7 +53,6 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
     // Infrastructure (global)
     PrismaModule,
     RedisModule,
-    FirebaseModule,
     StorageModule,
     OpenAiModule,
     StripeModule,
@@ -80,12 +79,13 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
     PastPapersModule,
     SubscriptionModule,
     WaitlistModule,
+    SocialModule,
   ],
   providers: [
     // Retry transient DB-wake failures before anything else runs.
     { provide: APP_INTERCEPTOR, useClass: DbRetryInterceptor },
     // Order matters: authentication → rate limit → RBAC.
-    { provide: APP_GUARD, useClass: FirebaseAuthGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

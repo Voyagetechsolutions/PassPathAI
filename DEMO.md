@@ -1,6 +1,6 @@
 # Demo Credentials & Dev Auth
 
-PassPath includes a **dev-only authentication path** that allows you to demo the platform without setting up Firebase. This is strictly for development and is automatically disabled in production.
+PassPath includes a **dev-only authentication path** for seeded demo accounts. This is strictly for development and is automatically disabled in production.
 
 ## Quick Start
 
@@ -114,7 +114,7 @@ The demo seed creates a realistic dashboard experience:
 
 ## How It Works
 
-1. **Dev Auth Guard**: When `ENABLE_DEV_AUTH=true`, the auth guard accepts tokens with format `dev:<userId>` (no Firebase validation)
+1. **Dev sign-in endpoint**: When `ENABLE_DEV_AUTH=true`, seeded accounts can exchange the demo password for a normal signed access token.
 
 2. **Dev Login Endpoint**: `POST /auth/dev-login` checks the email/password against demo accounts in the database and returns a dev token
 
@@ -125,10 +125,10 @@ The demo seed creates a realistic dashboard experience:
 ⚠️ **Never enable dev auth in production!**
 
 - The backend will refuse to start if `ENABLE_DEV_AUTH=true` and `NODE_ENV=production`
-- Dev tokens bypass Firebase authentication entirely
+- Demo sign-in is disabled automatically in production
 - Demo accounts use a shared password from environment variables
 
-This feature exists solely to let you explore PassPath without Firebase configuration. For production deployments, always use Firebase authentication.
+This feature exists solely to let you explore PassPath with seeded accounts. Production uses the standard Neon-backed email/password endpoints.
 
 ## Re-running the Seed
 

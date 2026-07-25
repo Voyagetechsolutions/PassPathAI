@@ -1,6 +1,6 @@
 # PassPath Quick Start Guide
 
-This guide will help you get PassPath running quickly with demo credentials (no Firebase setup required).
+This guide will help you get PassPath running quickly with PostgreSQL-backed demo credentials.
 
 ## Prerequisites Check
 
@@ -8,7 +8,7 @@ Before starting, ensure you have:
 - ✅ Node.js (v18 or later)
 - ✅ PostgreSQL (running on port 5432)
 - ✅ Redis (running on port 6379)
-- ⚠️ Firebase (optional for dev mode)
+- ✅ PostgreSQL connection
 - ⚠️ OpenAI API key (optional for dev mode)
 
 **🪟 Windows users without Docker?** See [SETUP-WINDOWS.md](SETUP-WINDOWS.md) for detailed installation instructions.
@@ -127,7 +127,7 @@ Visit `http://localhost:8080/login` and click one of the demo buttons:
 - **Demo Parent Account** → Parent dashboard with linked child
 - **Demo Admin Account** → Admin panel
 
-That's it! No Firebase configuration needed for demo mode.
+That's it! Demo mode uses the same backend session tokens as production.
 
 ## Troubleshooting
 
@@ -164,11 +164,11 @@ npx prisma migrate dev
    - **macOS:** `brew services start redis`
    - **Linux:** `sudo systemctl start redis`
 
-### "Firebase credentials not configured"
+### "AUTH_TOKEN_SECRET is missing"
 
 This is **expected in dev mode**. You can ignore this warning when using demo accounts.
 
-For production Firebase auth, see the [main README](README.md).
+Generate a random secret of at least 32 characters and set `AUTH_TOKEN_SECRET`.
 
 ### "OPENAI_API_KEY not set"
 
@@ -205,7 +205,7 @@ For Expo Go on a physical device:
 ## Next Steps
 
 - 📖 Read [DEMO.md](DEMO.md) for complete demo feature documentation
-- 🔥 Set up Firebase for production auth
+- 🔐 Set a strong production `AUTH_TOKEN_SECRET`
 - 🤖 Add OpenAI API key for AI features
 - 🚀 Deploy to production (see deployment docs)
 
@@ -239,7 +239,7 @@ npm run typecheck         # Check TypeScript errors
 | PostgreSQL | 5432 | ✅ Yes   | Database                   |
 | Redis      | 6379 | ✅ Yes   | Caching & rate limiting    |
 | Web        | 8080 | ⚠️ Dev   | Next.js frontend           |
-| Firebase   | -    | ⚠️ Prod  | Identity provider          |
+| PostgreSQL | -    | ✅       | Database and credentials   |
 | OpenAI     | -    | ⚠️ Opt   | AI features                |
 
 Happy coding! 🎉

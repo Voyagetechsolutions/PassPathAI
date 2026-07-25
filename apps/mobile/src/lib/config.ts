@@ -1,15 +1,7 @@
 import Constants from 'expo-constants';
 
-interface FirebaseConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  appId: string;
-}
-
 interface AppExtra {
   apiBaseUrl: string;
-  firebase: FirebaseConfig;
 }
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Partial<AppExtra>;
@@ -39,9 +31,3 @@ function deriveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = deriveApiBaseUrl();
-export const FIREBASE_CONFIG: FirebaseConfig = {
-  apiKey: extra.firebase?.apiKey ?? '',
-  authDomain: extra.firebase?.authDomain ?? '',
-  projectId: extra.firebase?.projectId ?? '',
-  appId: extra.firebase?.appId ?? '',
-};

@@ -17,7 +17,6 @@ describe('ProfileService', () => {
 
   const student: AuthenticatedUser = {
     id: 'u1',
-    uid: 'fb1',
     email: 'thabo@example.com',
     role: Role.student,
     emailVerified: true,

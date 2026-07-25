@@ -43,6 +43,7 @@ export default function RootLayout() {
           <Stack.Screen name="exam-paper" options={{ presentation: 'card', gestureEnabled: false }} />
           <Stack.Screen name="admin-stats" options={{ presentation: 'card' }} />
           <Stack.Screen name="quiz" options={{ presentation: 'card', gestureEnabled: false }} />
+          <Stack.Screen name="friend-chat" options={{ presentation: 'card' }} />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

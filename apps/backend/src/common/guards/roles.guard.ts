@@ -7,7 +7,7 @@ import type { AuthenticatedUser } from '../types/authenticated-user';
 import type { AppConfig } from '../../config/configuration';
 
 /**
- * Enforces @Roles(...) metadata. Runs after FirebaseAuthGuard, so request.user
+ * Enforces @Roles(...) metadata. Runs after AuthGuard, so request.user
  * is already populated. Routes with no @Roles() decorator are allowed for any
  * authenticated user.
  *

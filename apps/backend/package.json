@@ -39,10 +39,17 @@
     "db:generate:questions": "ts-node prisma/generate-questions.ts",
     "db:build:lessons": "ts-node prisma/build-lessons.ts",
     "db:extract:papers": "ts-node prisma/extract-pastpaper-questions.ts",
-    "db:upload:r2": "ts-node prisma/upload-papers-r2.ts"
+    "db:upload:s3": "ts-node prisma/upload-content-s3.ts",
+    "db:audit:content": "ts-node prisma/audit-content.ts",
+    "db:catalog:papers": "ts-node prisma/backfill-past-paper-catalog.ts",
+    "db:catalog:unreferenced-papers": "ts-node prisma/catalog-unreferenced-papers.ts",
+    "db:ocr:syllabus": "ts-node prisma/ocr-syllabus-textract.ts",
+    "db:normalize:siyavula": "node prisma/normalize-siyavula-subject-codes.cjs",
+    "db:normalize:storage-keys": "node prisma/normalize-storage-keys.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.665.0",
+    "@aws-sdk/client-textract": "^3.665.0",
     "@aws-sdk/s3-request-presigner": "^3.665.0",
     "@nestjs/common": "^10.4.4",
     "@nestjs/config": "^3.2.3",
@@ -54,7 +61,6 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "compression": "^1.8.1",
-    "firebase-admin": "^12.6.0",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
     "openai": "^4.67.3",

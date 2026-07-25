@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNumberString, IsOptional, IsString, validateSync } from 'class-validator';
+import { IsNumberString, IsOptional, IsString, MinLength, validateSync } from 'class-validator';
 
 /**
  * Fail-fast validation of the environment at boot. Only variables that the app
@@ -8,6 +8,10 @@ import { IsNumberString, IsOptional, IsString, validateSync } from 'class-valida
 class EnvironmentVariables {
   @IsString()
   DATABASE_URL!: string;
+
+  @IsString()
+  @MinLength(32)
+  AUTH_TOKEN_SECRET!: string;
 
   @IsOptional()
   @IsNumberString()

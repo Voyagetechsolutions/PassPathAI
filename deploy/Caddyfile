@@ -1,0 +1,6 @@
+# DOMAIN comes from docker-compose.prod.yml (":80" until a domain is attached,
+# then e.g. "passpath.co.za www.passpath.co.za" — Caddy handles HTTPS certs).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy backend:3000
+}

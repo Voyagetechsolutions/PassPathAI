@@ -17,19 +17,14 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Secrets — fill these in the Render dashboard (values from apps/backend/.env
-      # and firebase-admin.json on your machine; never commit them).
+      # Secrets — fill these in the Render dashboard; never commit them.
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: FIREBASE_PROJECT_ID
-        sync: false
-      - key: FIREBASE_CLIENT_EMAIL
-        sync: false
-      - key: FIREBASE_PRIVATE_KEY
+      - key: AUTH_TOKEN_SECRET
         sync: false
       # Optional — set when Paystack goes live.
       - key: PAYSTACK_SECRET_KEY
@@ -37,6 +32,6 @@ services:
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
       # PDFs aren't in the repo; keep local driver until an object store (e.g.
-      # Cloudflare R2 free tier) is wired via STORAGE_DRIVER=s3 + AWS_* vars.
+      # Amazon S3 is wired via STORAGE_DRIVER=s3 + AWS_* variables.
       - key: STORAGE_DRIVER
         value: local

@@ -1,67 +1,154 @@
-# Deploying PassPath
+# Deploying PassPath (AWS Lightsail)
 
-Production runs on **Railway** as ONE service: the website and the API are the
-same deployment. Every push to `main` on GitHub redeploys automatically.
+Production runs on **one AWS Lightsail instance** ($7/month: 2 vCPU, 1GB RAM,
+40GB SSD, 2TB transfer). Docker Compose runs four containers on it:
 
-| What | URL |
+| Container | Role |
 |---|---|
-| Website (landing page) | `https://passpathai-production.up.railway.app/` |
-| Privacy policy (Play Store needs this) | `https://passpathai-production.up.railway.app/privacy.html` |
-| API | `https://passpathai-production.up.railway.app/api` |
-| API health check | `https://passpathai-production.up.railway.app/api/health` |
-| API docs (Swagger) | `https://passpathai-production.up.railway.app/docs` |
+| `passpath-backend` | NestJS API + marketing site (same image, `apps/backend/Dockerfile`) |
+| `passpath-db` | Postgres 18 with pgvector + pgcrypto (replaces Neon — no 512MB cap) |
+| `passpath-redis` | Cache (optional for the app, free to run here) |
+| `passpath-caddy` | HTTPS reverse proxy — automatic TLS certificates |
 
-The site's files live in `apps/backend/public/` — edit `index.html` there and
-push; the live site updates on the next deploy. No separate hosting, no second
-service to keep in sync.
+The curriculum and past-paper PDFs live in a private Amazon S3 bucket. The
+instance holds only PostgreSQL, Redis and the API, so the content library can
+grow without consuming the server disk.
 
-## Vercel (domain front)
+**Monthly cost: ~$7.10** ($7 instance + pennies for S3 backups).
 
-The repo also deploys on Vercel via `vercel.json`: Vercel publishes
-`apps/backend/public` as a static site (no build) and proxies `/api/*` and
-`/docs` through to the Railway backend. Attach your custom domain to the
-Vercel project and the whole site — pages **and** API — works on that domain.
-Nothing to configure in the Vercel dashboard; the file does it all.
+---
 
-## Connecting your custom domain directly to Railway (alternative, ~10 min)
+## 1. Create the instance (AWS console, ~10 min)
 
-1. Railway dashboard → the **passpathai** service → **Settings** → **Networking**
-   → **Custom Domain** → enter your domain (e.g. `passpath.co.za`, and add
-   `www.passpath.co.za` too).
-2. Railway shows a **CNAME** value. At your domain registrar, add a CNAME record
-   pointing your domain at that value. (For a root/apex domain, use the
-   registrar's ALIAS/ANAME/CNAME-flattening option, or put the site on `www`
-   and redirect the apex.)
-3. Wait for DNS (minutes to a few hours). Railway issues the HTTPS certificate
-   automatically.
-4. After the domain is live, do a find-and-replace of
-   `passpathai-production.up.railway.app` → your domain in:
-   - `apps/mobile/app.json` (`apiBaseUrl`)
-   - `marketing/social-content-pack.md`
-   The old Railway URL keeps working either way.
+1. Sign up / sign in at <https://aws.amazon.com> (needs a card; new accounts get
+   free-tier credits).
+2. Go to **Lightsail** (search "Lightsail" in the console) → **Create instance**.
+3. Region: **London (eu-west-2)** — Lightsail has no Cape Town region; London is
+   the closest.
+4. Platform **Linux/Unix** → Blueprint **OS Only → Ubuntu 24.04 LTS**.
+5. Plan: **$7/month (1GB RAM, 2 vCPU, 40GB SSD)**. 512MB is too small for
+   Postgres + Node + Docker builds.
+6. Name it `passpath` → **Create instance**.
+7. **Networking tab** of the instance:
+   - Create + attach a **static IP** (free while attached).
+   - Under firewall, **add HTTPS (443)** — 22 and 80 are open by default.
 
-## Env vars (already set on Railway)
+## 2. Connect
 
-`DATABASE_URL`, `DIRECT_URL`, `OPENAI_API_KEY`, `FIREBASE_PROJECT_ID`,
-`FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `NODE_ENV=production`.
+Easiest: the **browser SSH terminal** (orange "Connect" button on the instance
+page). Or from PowerShell: download the default SSH key from Lightsail →
+**Account → SSH keys**, then:
 
-Set later when ready:
-- `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` — from your Paystack dashboard.
-  Webhook URL: `https://<your-domain>/api/subscription/webhook`.
-- `PREMIUM_PRICE_CENTS` — defaults to `9900` (R99/month) in code.
+```bash
+ssh -i LightsailDefaultKey-eu-west-2.pem ubuntu@<STATIC_IP>
+```
 
-## Still pending
+## 3. Set up the box (one-time)
 
-- **Past-paper PDF downloads**: the 590MB of PDFs live only on the dev machine.
-  To serve them from the cloud, create a free Cloudflare R2 bucket (10GB free),
-  upload `apps/backend/storage/`, and set `STORAGE_DRIVER=s3` + the `AWS_*`
-  vars. Everything except the PDF *downloads* already works — the AI content is
-  in the database, not the PDFs.
-- **Neon database** is at its 512MB free cap — subscription tables + the last
-  1.3% of AI embeddings are blocked until that's resolved (Neon paid tier, or a
-  new project + data migration).
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker ubuntu && exit   # reconnect so the group applies
 
-## Backup option
+# 2GB swap — the image build (TypeScript compile) needs it on a 1GB box
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
-`render.yaml` still describes an equivalent single-service deploy on Render's
-free tier if Railway ever needs replacing.
+# Code (use a GitHub personal access token if the repo is private)
+git clone https://github.com/<your-username>/PassPath.git
+cd PassPath
+```
+
+Create `.env` in the repo root on the server (`nano .env`):
+
+```
+POSTGRES_PASSWORD=<long random string>
+AUTH_TOKEN_SECRET=<same value as on Railway, so existing logins keep working>
+OPENAI_API_KEY=<key>
+# DOMAIN=passpath.co.za www.passpath.co.za   # uncomment once DNS points here
+# PAYSTACK_SECRET_KEY= / PAYSTACK_PUBLIC_KEY=   # when live
+```
+
+## 4. Migrate the database off Neon
+
+Start **only Postgres** first (restoring into a fresh DB, before the app runs
+its migrations):
+
+```bash
+docker compose -f docker-compose.prod.yml up -d db
+docker compose -f docker-compose.prod.yml exec -T db \
+  pg_dump "<NEON_DIRECT_URL>" | \
+  docker compose -f docker-compose.prod.yml exec -T db psql -U passpath passpath
+```
+
+(pg_dump refuses if its version is older than the server's — the compose file
+pins `pgvector/pgvector:pg18` to match Neon's Postgres 18.)
+
+This also un-blocks the two things the 512MB Neon cap was holding up: run the
+subscription migrations and the last embeddings backfill afterwards.
+
+## 5. Create S3 and upload the PDFs
+
+Create the private content bucket, IAM policy and API credentials, then
+synchronise the existing files by following `infra/aws/README.md`. Add these
+values to the root `.env` on the Lightsail instance:
+
+```text
+AWS_REGION=eu-west-2
+AWS_S3_BUCKET=<BucketName output>
+AWS_ACCESS_KEY_ID=<dedicated IAM user key>
+AWS_SECRET_ACCESS_KEY=<dedicated IAM user secret>
+```
+
+## 6. Launch
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+curl http://localhost/api/health
+```
+
+Then check `http://<STATIC_IP>/` in a browser — site and API should be up
+(plain HTTP until the domain is attached).
+
+## 7. Domain + HTTPS
+
+1. At your registrar, point the domain (A record, apex + `www`) at the static IP.
+   If the site currently fronts through Vercel, either update `vercel.json`'s
+   proxy target to the new box or drop Vercel and go direct.
+2. Uncomment `DOMAIN=...` in `.env`, then `docker compose -f docker-compose.prod.yml up -d`.
+   Caddy fetches TLS certificates automatically once DNS resolves.
+3. Update the Paystack webhook URL: `https://<domain>/api/subscription/webhook`.
+4. Update `apps/mobile/app.json` (`apiBaseUrl`) if the API URL changed.
+
+## 8. Backups (do not skip)
+
+Nightly `pg_dump` to S3 — setup instructions are at the top of
+[deploy/backup-db.sh](deploy/backup-db.sh) (S3 bucket + lifecycle rule + cron).
+Optionally also enable Lightsail **automatic snapshots** on the instance
+(~$1–2/month) for whole-box recovery.
+
+## Redeploying after a code change
+
+```bash
+cd ~/PassPath && git pull
+docker compose -f docker-compose.prod.yml up -d --build backend
+```
+
+(Migrations run automatically on container start.)
+
+## Retiring the old stack
+
+Once the domain serves from AWS and a backup has landed in S3: delete the
+Railway service and the Neon project. `render.yaml` remains as a free-tier
+fallback description.
+
+## Env vars reference
+
+Required: `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `OPENAI_API_KEY`,
+`AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`.
+Optional: `DOMAIN`, `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`,
+`PREMIUM_PRICE_CENTS` (defaults to `9900` = R99/month).
+`DATABASE_URL`/`DIRECT_URL`/`REDIS_*`/`STORAGE_*` are set by
+`docker-compose.prod.yml` — don't put them in `.env`.

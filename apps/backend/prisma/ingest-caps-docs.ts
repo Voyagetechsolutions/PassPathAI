@@ -9,10 +9,16 @@ const prisma = new PrismaClient();
 const STORAGE_DIR = process.env.STORAGE_LOCAL_DIR ?? './storage';
 const BASE = process.env.CAPS_DIR ?? 'C:/Users/Mthokozisi.DESKTOP-DPOBCC1/Downloads';
 
-const FOLDERS = [
+const ALL_FOLDERS = [
   { dir: path.join(BASE, 'grade 7 to 9'), grade: 9 },
   { dir: path.join(BASE, 'grade 10 to 12'), grade: 10 },
 ];
+const phase = process.env.CAPS_PHASE;
+const FOLDERS = phase === 'senior'
+  ? ALL_FOLDERS.filter((folder) => folder.grade === 9)
+  : phase === 'fet'
+    ? ALL_FOLDERS.filter((folder) => folder.grade === 10)
+    : ALL_FOLDERS;
 
 // Each entry: ALL `keys` must appear (lowercased) in the filename. Order matters —
 // specific phrases first, then generic; FAL languages before Home Languages.

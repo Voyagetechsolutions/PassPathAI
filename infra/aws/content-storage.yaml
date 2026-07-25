@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Private, encrypted S3 storage for PassPath CAPS documents and past papers.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedPattern: "[a-z0-9-]+"
+    Description: Environment tag applied to the resources.
+
+Resources:
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: RemoveOldNoncurrentVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      Tags:
+        - Key: Application
+          Value: PassPath
+        - Key: Environment
+          Value: !Ref Environment
+
+  ContentAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Least-privilege access for the PassPath API and content synchronisation job.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ListBucket
+            Effect: Allow
+            Action:
+              - s3:GetBucketLocation
+              - s3:ListBucket
+            Resource: !GetAtt ContentBucket.Arn
+          - Sid: ManageContentObjects
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+            Resource: !Sub "${ContentBucket.Arn}/*"
+          - Sid: OcrScannedCurriculum
+            Effect: Allow
+            Action:
+              - textract:GetDocumentTextDetection
+              - textract:StartDocumentTextDetection
+            Resource: "*"
+
+  RequireTlsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt ContentBucket.Arn
+              - !Sub "${ContentBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+Outputs:
+  BucketName:
+    Description: Set this as AWS_S3_BUCKET.
+    Value: !Ref ContentBucket
+  BucketRegion:
+    Description: Set this as AWS_REGION.
+    Value: !Ref AWS::Region
+  ContentAccessPolicyArn:
+    Description: Attach this policy to the API role, or to a dedicated Lightsail IAM user.
+    Value: !Ref ContentAccessPolicy

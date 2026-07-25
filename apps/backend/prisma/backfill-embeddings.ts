@@ -6,6 +6,7 @@ import { withDbRetry } from '../src/common/utils/db-retry';
 const prisma = new PrismaClient();
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small';
+const dimensions = parseInt(process.env.OPENAI_EMBEDDING_DIM ?? '256', 10);
 const BATCH = 100;
 
 function toVectorLiteral(v: number[]): string {
@@ -36,7 +37,11 @@ async function main(): Promise<void> {
     if (pending.length === 0) {
       break;
     }
-    const res = await openai.embeddings.create({ model, input: pending.map((c) => c.content) });
+    const res = await openai.embeddings.create({
+      model,
+      input: pending.map((c) => c.content),
+      dimensions,
+    });
     const rows = pending.map(
       (c, idx) => Prisma.sql`(${c.id}, ${toVectorLiteral(res.data[idx].embedding)}::vector)`,
     );

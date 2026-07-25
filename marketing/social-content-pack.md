@@ -4,7 +4,13 @@ Ready-to-post content for TikTok, Instagram, Facebook and WhatsApp.
 Every claim in here is true of the app today. CTA everywhere is the early-access
 site (the app isn't on the Play Store yet — don't say "download now"):
 
-> **CTA:** Early access → www.passpathai.com (link in bio)
+> **CTA:** Early access → www.passpathai.com/early-access (link in bio)
+
+**Signup page:** `https://www.passpathai.com/early-access` collects name + email
+(grade optional). This is the URL to put behind every QR code and bio link.
+⚠️ The printed poster shows `PassPathSA.co.za/early-access` — that domain is
+NOT the live site. Either point the QR at passpathai.com/early-access or buy
+and redirect passpathsa.co.za before printing.
 
 Brand voice: a smart older sibling, not a corporation. SA-specific, plain
 English, no fake hype. Colors for graphics: navy #0B2545, green #16A34A,

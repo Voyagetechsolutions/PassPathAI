@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
+import { AuthGuard } from './guards/auth.guard';
+import { TokenService } from './token.service';
 
 /**
- * Module 1 — Authentication. Firebase is the IdP; this module owns local account
- * provisioning and RBAC. FirebaseAuthGuard is exported for use as a global guard.
+ * Module 1 — PostgreSQL-backed credentials, signed sessions and RBAC.
  */
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, FirebaseAuthGuard],
-  exports: [AuthService, FirebaseAuthGuard],
+  providers: [AuthService, TokenService, AuthGuard],
+  exports: [AuthService, TokenService, AuthGuard],
 })
 export class AuthModule {}

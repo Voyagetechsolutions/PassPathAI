@@ -7,172 +7,107 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
-import { PrismaService } from '../../infra/prisma/prisma.service';
-import { FirebaseService, FirebaseTokenClaims } from '../../infra/firebase/firebase.service';
-import type { AuthenticatedUser } from '../../common/types/authenticated-user';
 import type { AppConfig } from '../../config/configuration';
+import type { AuthenticatedUser } from '../../common/types/authenticated-user';
+import { PrismaService } from '../../infra/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { hashPassword, verifyPassword } from './password';
+import { TokenService } from './token.service';
 
-export interface DevLoginResult {
-  token: string;
-  user: AuthenticatedUser;
-}
+export interface LoginResult { token: string; user: AuthenticatedUser }
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly firebase: FirebaseService,
+    private readonly tokens: TokenService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
-  /**
-   * Dev-only password login for demo accounts. Returns a `dev:<userId>` bearer
-   * token the guard accepts. Disabled entirely in production.
-   */
-  async devLogin(email: string, password: string): Promise<DevLoginResult> {
-    const devAuth = this.config.get('devAuth', { infer: true });
-    if (!devAuth.enabled) {
-      throw new NotFoundException('Dev auth is disabled');
-    }
-    if (password !== devAuth.demoPassword) {
-      throw new UnauthorizedException('Invalid demo credentials');
-    }
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        studentProfile: { select: { id: true } },
-        parentProfile: { select: { id: true } },
-      },
-    });
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid demo credentials');
-    }
-    return { token: `dev:${user.id}`, user: this.toAuthUser(user, true) };
-  }
-
-  /**
-   * Provision the local account after a Firebase sign-up. Idempotency: a second
-   * call with the same Firebase UID is rejected as a conflict.
-   */
-  async register(claims: FirebaseTokenClaims, dto: RegisterDto): Promise<AuthenticatedUser> {
-    if (!claims.email) {
-      throw new BadRequestException('Firebase token has no email');
-    }
-    const existing = await this.prisma.user.findUnique({ where: { firebaseUid: claims.uid } });
-    if (existing) {
-      throw new ConflictException('Account already registered');
-    }
-    if (dto.role === Role.student && (dto.grade === undefined || dto.grade === null)) {
+  async register(dto: RegisterDto): Promise<LoginResult> {
+    const email = dto.email.trim().toLowerCase();
+    if (dto.role === Role.student && dto.grade == null) {
       throw new BadRequestException('Grade is required for students');
     }
-    // Admins cannot self-register through this endpoint.
-    const role = dto.role === Role.admin ? Role.student : dto.role;
+    const exists = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (exists) throw new ConflictException('An account with this email already exists');
 
+    const role = dto.role === Role.admin ? Role.student : dto.role;
+    const passwordHash = await hashPassword(dto.password);
     const user = await this.prisma.user.create({
       data: {
-        firebaseUid: claims.uid,
-        email: claims.email,
-        emailVerified: claims.emailVerified,
+        email,
+        passwordHash,
+        emailVerified: false,
         role,
         ...(role === Role.student
-          ? {
-              studentProfile: {
-                create: {
-                  firstName: dto.firstName,
-                  surname: dto.surname,
-                  grade: dto.grade!,
-                  school: dto.school,
-                  province: dto.province,
-                },
-              },
-            }
-          : {
-              parentProfile: {
-                create: { firstName: dto.firstName, surname: dto.surname },
-              },
-            }),
+          ? { studentProfile: { create: {
+              firstName: dto.firstName,
+              surname: dto.surname,
+              grade: dto.grade!,
+              school: dto.school,
+              province: dto.province,
+            } } }
+          : { parentProfile: { create: { firstName: dto.firstName, surname: dto.surname } } }),
       },
-      include: {
-        studentProfile: { select: { id: true } },
-        parentProfile: { select: { id: true } },
-      },
+      include: this.profileInclude,
     });
-
-    return this.toAuthUser(user, claims.emailVerified);
+    const principal = this.toAuthUser(user);
+    return { token: this.tokens.sign(user.id), user: principal };
   }
 
-  /**
-   * Verify a raw Firebase ID token (used by the public register endpoint, where
-   * no local account exists yet so the guard cannot run).
-   */
-  async verifyToken(token: string): Promise<FirebaseTokenClaims> {
-    try {
-      return await this.firebase.verifyIdToken(token);
-    } catch {
-      throw new BadRequestException('Invalid or expired Firebase token');
+  async login(emailInput: string, password: string): Promise<LoginResult> {
+    const email = emailInput.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email }, include: this.profileInclude });
+    if (!user?.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+      throw new UnauthorizedException('Invalid email or password');
     }
-  }
-
-  /**
-   * Record a login and return the current principal. Token already verified by
-   * the guard; here we refresh emailVerified + lastLoginAt.
-   */
-  async recordSession(userId: string, emailVerified: boolean): Promise<AuthenticatedUser> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { lastLoginAt: new Date(), emailVerified },
-      include: {
-        studentProfile: { select: { id: true } },
-        parentProfile: { select: { id: true } },
-      },
+    if (!user.isActive) throw new UnauthorizedException('Account is suspended');
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+      include: this.profileInclude,
     });
-    return this.toAuthUser(user, emailVerified);
+    return { token: this.tokens.sign(user.id), user: this.toAuthUser(updated) };
   }
 
-  /**
-   * Logout-everywhere: revoke all Firebase refresh tokens for the user.
-   */
-  async logout(uid: string): Promise<void> {
-    await this.firebase.revokeRefreshTokens(uid);
+  async devLogin(email: string, password: string): Promise<LoginResult> {
+    const devAuth = this.config.get('devAuth', { infer: true });
+    if (!devAuth.enabled) throw new NotFoundException('Dev auth is disabled');
+    if (password !== devAuth.demoPassword) throw new UnauthorizedException('Invalid demo credentials');
+    const user = await this.prisma.user.findUnique({ where: { email }, include: this.profileInclude });
+    if (!user || !user.isActive) throw new UnauthorizedException('Invalid demo credentials');
+    return { token: this.tokens.sign(user.id), user: this.toAuthUser(user) };
   }
 
-  /**
-   * Admin role management.
-   */
+  async recordSession(userId: string): Promise<AuthenticatedUser> {
+    const user = await this.prisma.user.update({
+      where: { id: userId }, data: { lastLoginAt: new Date() }, include: this.profileInclude,
+    });
+    return this.toAuthUser(user);
+  }
+
   async setRole(targetUserId: string, role: Role): Promise<AuthenticatedUser> {
-    const user = await this.prisma.user
-      .update({
-        where: { id: targetUserId },
-        data: { role },
-        include: {
-          studentProfile: { select: { id: true } },
-          parentProfile: { select: { id: true } },
-        },
-      })
-      .catch(() => {
-        throw new NotFoundException('User not found');
-      });
-    return this.toAuthUser(user, user.emailVerified);
+    const user = await this.prisma.user.update({
+      where: { id: targetUserId }, data: { role }, include: this.profileInclude,
+    }).catch(() => { throw new NotFoundException('User not found'); });
+    return this.toAuthUser(user);
   }
 
-  private toAuthUser(
-    user: {
-      id: string;
-      firebaseUid: string;
-      email: string;
-      role: Role;
-      studentProfile: { id: string } | null;
-      parentProfile: { id: string } | null;
-    },
-    emailVerified: boolean,
-  ): AuthenticatedUser {
+  private readonly profileInclude = {
+    studentProfile: { select: { id: true } },
+    parentProfile: { select: { id: true } },
+  } as const;
+
+  private toAuthUser(user: {
+    id: string; email: string; role: Role; emailVerified: boolean;
+    studentProfile: { id: string } | null; parentProfile: { id: string } | null;
+  }): AuthenticatedUser {
     return {
       id: user.id,
-      uid: user.firebaseUid,
       email: user.email,
       role: user.role,
-      emailVerified,
+      emailVerified: user.emailVerified,
       studentProfileId: user.studentProfile?.id,
       parentProfileId: user.parentProfile?.id,
     };

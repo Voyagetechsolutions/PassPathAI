@@ -1,9 +1,7 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Patch,
@@ -21,6 +19,7 @@ import { RegisterDto } from './dto/register.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AuthUserDto } from './dto/auth-response.dto';
 import { DevLoginDto } from './dto/dev-login.dto';
+import { LoginDto } from './dto/login.dto';
 
 @ApiTags('auth')
 @ApiBearerAuth()
@@ -33,14 +32,18 @@ export class AuthController {
   // Abuse guard: at most 5 new accounts per IP per day. Generous enough for a
   // family or a study group on one connection; hostile enough for farm scripts.
   @Throttle({ default: { limit: 5, ttl: 86_400_000 } })
-  @ApiOperation({ summary: 'Provision a local account after Firebase sign-up' })
-  async register(
-    @Headers('authorization') authorization: string | undefined,
-    @Body() dto: RegisterDto,
-  ): Promise<AuthUserDto> {
-    const token = this.bearer(authorization);
-    const claims = await this.authService.verifyToken(token);
-    return this.authService.register(claims, dto);
+  @ApiOperation({ summary: 'Create an account in PostgreSQL and start a session' })
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  @ApiOperation({ summary: 'Sign in with an email and password' })
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto.email, dto.password);
   }
 
   @Public()
@@ -55,7 +58,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Record a login and return the current principal' })
   async session(@CurrentUser() user: AuthenticatedUser): Promise<AuthUserDto> {
-    return this.authService.recordSession(user.id, user.emailVerified);
+    return this.authService.recordSession(user.id);
   }
 
   @Get('me')
@@ -67,8 +70,8 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revoke all refresh tokens (logout everywhere)' })
-  async logout(@CurrentUser() user: AuthenticatedUser): Promise<void> {
-    await this.authService.logout(user.uid);
+  logout(): void {
+    // Access tokens are short-lived and discarded by the client.
   }
 
   @Patch('role')
@@ -76,13 +79,5 @@ export class AuthController {
   @ApiOperation({ summary: 'Admin: assign a role to a user' })
   async setRole(@Body() dto: UpdateRoleDto): Promise<AuthUserDto> {
     return this.authService.setRole(dto.userId, dto.role);
-  }
-
-  private bearer(authorization?: string): string {
-    const [scheme, value] = (authorization ?? '').split(' ');
-    if (scheme?.toLowerCase() !== 'bearer' || !value) {
-      throw new BadRequestException('Missing bearer token');
-    }
-    return value;
   }
 }

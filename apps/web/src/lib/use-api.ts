@@ -12,7 +12,7 @@ interface ApiResult<T> {
 }
 
 /**
- * Fetch from the backend with the current Firebase token. Re-runs when the path,
+ * Fetch from the backend with the current access token. Re-runs when the path,
  * token, or any extra dependency changes. Skips until a token is available.
  */
 export function useApi<T>(path: string | null, deps: unknown[] = []): ApiResult<T> {
