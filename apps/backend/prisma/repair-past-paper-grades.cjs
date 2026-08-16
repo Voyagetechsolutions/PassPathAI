@@ -2,9 +2,11 @@ require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
 
-const configuredUrls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
-  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
-process.env.DATABASE_URL = configuredUrls.at(-1);
+if (fs.existsSync('.env')) {
+  const configuredUrls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
+    .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+  process.env.DATABASE_URL = configuredUrls.at(-1) ?? process.env.DATABASE_URL;
+}
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();

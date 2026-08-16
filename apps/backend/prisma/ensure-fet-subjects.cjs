@@ -1,9 +1,11 @@
 const fs = require('node:fs');
 require('dotenv').config();
 
-const urls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
-  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
-process.env.DATABASE_URL = urls.at(-1);
+if (fs.existsSync('.env')) {
+  const urls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
+    .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+  process.env.DATABASE_URL = urls.at(-1) ?? process.env.DATABASE_URL;
+}
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();

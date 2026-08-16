@@ -1,10 +1,14 @@
 const fs = require('node:fs');
 require('dotenv').config();
 
-const urls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
-  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+const urls = fs.existsSync('.env')
+  ? [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
+      .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''))
+  : [];
 const requestedIndex = Number(process.env.AUDIT_DATABASE_INDEX ?? -1);
-const databaseUrl = requestedIndex < 0 ? urls.at(-1) : urls[requestedIndex];
+const databaseUrl = requestedIndex < 0
+  ? (urls.at(-1) ?? process.env.DATABASE_URL)
+  : urls[requestedIndex];
 if (!databaseUrl) throw new Error('Configured DATABASE_URL not found');
 process.env.DATABASE_URL = databaseUrl;
 

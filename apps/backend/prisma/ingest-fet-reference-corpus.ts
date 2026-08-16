@@ -5,10 +5,12 @@ import { extractPdf } from '../src/modules/curriculum/ingestion/pdf.util';
 import { chunkText } from '../src/modules/curriculum/ingestion/text-chunker';
 import { withDbRetry } from '../src/common/utils/db-retry';
 
-const envText = fs.readFileSync('.env', 'utf8');
-const urls = [...envText.matchAll(/^DATABASE_URL=(.+)$/gm)]
-  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
-process.env.DATABASE_URL = urls.at(-1);
+if (fs.existsSync('.env')) {
+  const envText = fs.readFileSync('.env', 'utf8');
+  const urls = [...envText.matchAll(/^DATABASE_URL=(.+)$/gm)]
+    .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+  process.env.DATABASE_URL = urls.at(-1) ?? process.env.DATABASE_URL;
+}
 
 const prisma = new PrismaClient();
 const storageDir = process.env.STORAGE_LOCAL_DIR ?? './storage';
