@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiRequest } from './api';
 import type { AuthUser } from './types';
+import { IS_PREVIEW_MODE } from './config';
 
-export interface RegisterProfile { firstName: string; surname: string; grade: number; province?: string }
+export interface RegisterProfile { firstName: string; surname: string; grade: number; school?: string; province?: string }
 interface SessionResponse { token: string; user: AuthUser }
 interface AuthState {
   profile: AuthUser | null; token: string | null; loading: boolean; authError: string | null;
@@ -16,9 +17,10 @@ const STORAGE_KEY = 'passpath.accessToken';
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const previewUser: AuthUser = { id: 'preview-student', email: 'preview@passpath.app', role: 'student', emailVerified: true, studentProfileId: 'preview-profile' };
+  const [profile, setProfile] = useState<AuthUser | null>(IS_PREVIEW_MODE ? previewUser : null);
+  const [token, setToken] = useState<string | null>(IS_PREVIEW_MODE ? 'preview-session' : null);
+  const [loading, setLoading] = useState(!IS_PREVIEW_MODE);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const acceptSession = useCallback(async (session: SessionResponse) => {
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (IS_PREVIEW_MODE) return;
     AsyncStorage.getItem(STORAGE_KEY).then(async (saved) => {
       if (!saved) return;
       setToken(saved);
@@ -52,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [acceptSession]);
 
   const logout = useCallback(async () => {
+    if (IS_PREVIEW_MODE) return;
     if (token) await apiRequest('/auth/logout', { method: 'POST', token }).catch(() => undefined);
     await AsyncStorage.removeItem(STORAGE_KEY); setToken(null); setProfile(null); setAuthError(null);
   }, [token]);

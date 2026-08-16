@@ -56,7 +56,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="career"
-        options={{ title: 'Career', href: null, tabBarIcon: ({ color }) => <Compass color={color} size={22} /> }}
+        options={{ title: 'Career', tabBarIcon: ({ color }) => <Compass color={color} size={22} /> }}
       />
       <Tabs.Screen
         name="friends"

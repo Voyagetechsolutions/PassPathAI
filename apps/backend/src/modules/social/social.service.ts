@@ -9,7 +9,7 @@ export class SocialService {
 
   async summary(user: AuthenticatedUser) {
     const studentId = this.studentId(user);
-    const [friendships, pending, student, rewards, studiedToday] = await Promise.all([
+    const [friendships, pending, outgoing, student, rewards, studiedToday] = await Promise.all([
       this.prisma.friendship.findMany({
         where: { status: FriendshipStatus.ACCEPTED, OR: [{ requesterId: studentId }, { addresseeId: studentId }] },
         include: {
@@ -24,6 +24,11 @@ export class SocialService {
         where: { addresseeId: studentId, status: FriendshipStatus.PENDING },
         include: { requester: { include: { user: { select: { email: true } } } } },
       }),
+      this.prisma.friendship.findMany({
+        where: { requesterId: studentId, status: FriendshipStatus.PENDING },
+        include: { addressee: { include: { user: { select: { email: true } } } } },
+        orderBy: { createdAt: 'desc' },
+      }),
       this.prisma.studentProfile.findUniqueOrThrow({ where: { id: studentId }, select: { rewardPoints: true } }),
       this.prisma.studentReward.findMany({ where: { studentId }, include: { reward: true }, orderBy: { earnedAt: 'desc' } }),
       this.prisma.studyActivity.findUnique({ where: { studentId_studyDate: { studentId, studyDate: this.today() } } }),
@@ -33,6 +38,7 @@ export class SocialService {
       rewardPoints: student.rewardPoints,
       rewards: rewards.map((item) => ({ ...item.reward, earnedAt: item.earnedAt })),
       pending: pending.map((item) => ({ id: item.id, friend: this.person(item.requester) })),
+      outgoing: outgoing.map((item) => ({ id: item.id, friend: this.person(item.addressee) })),
       friends: friendships.map((item) => {
         const friend = item.requesterId === studentId ? item.addressee : item.requester;
         return { id: item.id, friend: this.person(friend), streak: item.streak, lastMessage: item.messages[0] ?? null };
@@ -68,6 +74,18 @@ export class SocialService {
       where: { friendshipId }, update: {}, create: { friendshipId },
     });
     return { accepted: true };
+  }
+
+  async removeFriend(user: AuthenticatedUser, friendshipId: string) {
+    const studentId = this.studentId(user);
+    const result = await this.prisma.friendship.deleteMany({
+      where: {
+        id: friendshipId,
+        OR: [{ requesterId: studentId }, { addresseeId: studentId }],
+      },
+    });
+    if (!result.count) throw new NotFoundException('Friend request or friendship not found');
+    return { removed: true };
   }
 
   async messages(user: AuthenticatedUser, friendshipId: string, after?: string) {

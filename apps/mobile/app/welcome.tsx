@@ -27,7 +27,9 @@ export default function Welcome() {
 
   function next() {
     if (index < SLIDES.length - 1) {
-      listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+      const nextIndex = index + 1;
+      setIndex(nextIndex);
+      listRef.current?.scrollToIndex({ index: nextIndex, animated: true });
     } else {
       void finish();
     }
@@ -45,6 +47,7 @@ export default function Welcome() {
         ref={listRef}
         data={SLIDES}
         keyExtractor={(_, i) => String(i)}
+        getItemLayout={(_, i) => ({ length: W, offset: W * i, index: i })}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}

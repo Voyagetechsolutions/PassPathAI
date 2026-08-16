@@ -89,4 +89,31 @@ describe('CareerService.match', () => {
     expect(result.eligible).toBe(false);
     expect(result.unmetSubjects).toContain('Mathematics');
   });
+
+  it('accepts English First Additional Language for an English Home Language requirement', async () => {
+    prisma.career.findMany.mockResolvedValue([
+      {
+        id: 'c2',
+        title: 'Attorney',
+        description: '...',
+        faculty: 'Law & Humanities',
+        subjectRequirements: [{ subjectName: 'English Home Language', minPercent: 60 }],
+        programmes: [
+          {
+            university: 'UJ',
+            programmeName: 'LLB',
+            minAps: 5,
+            requirements: [],
+          },
+        ],
+      },
+    ]);
+
+    const [result] = await service.match('sp1', {
+      marks: [{ subjectName: 'English First Additional Language', percent: 68 }],
+    });
+
+    expect(result.unmetSubjects).toHaveLength(0);
+    expect(result.eligible).toBe(true);
+  });
 });

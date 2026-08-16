@@ -34,12 +34,14 @@ export default function CareerDetailScreen() {
   const markFor = (name: string) => marks[Object.keys(marks).find((k) => norm(k) === norm(name)) ?? ''] ?? undefined;
 
   const aps = useMemo(() => computeAps(Object.values(marks)), [marks]);
-  const neededAps = useMemo(() => (career && career.programmes.length ? Math.min(...career.programmes.map((p) => p.minAps)) : null), [career]);
+  const programmes = career?.programmes ?? [];
+  const subjectRequirements = career?.subjectRequirements ?? [];
+  const neededAps = useMemo(() => (programmes.length ? Math.min(...programmes.map((p) => p.minAps)) : null), [programmes]);
 
   // Default What-If to the first required subject the student is weakest in.
   useEffect(() => {
-    if (career && wiSubject === null && career.subjectRequirements.length > 0) {
-      const weakest = [...career.subjectRequirements].sort((a, b) => (markFor(a.subjectName) ?? 0) - (markFor(b.subjectName) ?? 0))[0];
+    if (career && wiSubject === null && subjectRequirements.length > 0) {
+      const weakest = [...subjectRequirements].sort((a, b) => (markFor(a.subjectName) ?? 0) - (markFor(b.subjectName) ?? 0))[0];
       setWiSubject(weakest.subjectName);
       setWiMark(markFor(weakest.subjectName) ?? 50);
     }
@@ -49,10 +51,10 @@ export default function CareerDetailScreen() {
     if (!wiSubject || !career) return null;
     const newMarks = { ...marks, [wiSubject]: wiMark };
     const newAps = computeAps(Object.values(newMarks));
-    const progsNow = career.programmes.filter((p) => aps >= p.minAps).length;
-    const progsNew = career.programmes.filter((p) => newAps >= p.minAps).length;
+    const progsNow = programmes.filter((p) => aps >= p.minAps).length;
+    const progsNew = programmes.filter((p) => newAps >= p.minAps).length;
     return { newAps, progsNow, progsNew };
-  }, [wiSubject, wiMark, marks, career, aps]);
+  }, [wiSubject, wiMark, marks, career, aps, programmes]);
 
   if (loading)
     return (
@@ -69,7 +71,7 @@ export default function CareerDetailScreen() {
   const apsPct = neededAps ? Math.min(100, Math.round((aps / neededAps) * 100)) : 100;
   const apsTone = neededAps && aps >= neededAps ? GREEN : aps >= (neededAps ?? 0) - 4 ? colors.warn : colors.danger;
   const apsWord = neededAps && aps >= neededAps ? 'You qualify!' : aps >= (neededAps ?? 0) - 4 ? 'Almost there' : 'Keep building';
-  const unmet = career.subjectRequirements.filter((r) => (markFor(r.subjectName) ?? 0) < r.minPercent);
+  const unmet = subjectRequirements.filter((r) => (markFor(r.subjectName) ?? 0) < r.minPercent);
   const months = Math.max(2, Math.min(18, unmet.reduce((s, r) => s + Math.ceil((r.minPercent - (markFor(r.subjectName) ?? 0)) / 5) * 1.5, 0)) || 3);
 
   return (
@@ -94,7 +96,7 @@ export default function CareerDetailScreen() {
       <Card>
         <Text style={[text.section, { marginBottom: spacing.md }]}>Required Subjects</Text>
         <View style={{ gap: spacing.md }}>
-          {career.subjectRequirements.map((r) => {
+          {subjectRequirements.map((r) => {
             const mark = markFor(r.subjectName);
             const met = (mark ?? 0) >= r.minPercent;
             return (
@@ -140,9 +142,9 @@ export default function CareerDetailScreen() {
             <TrendUp color={colors.brand} size={20} />
             <Text style={text.title}>What if you improved…?</Text>
           </View>
-          {career.subjectRequirements.length > 1 ? (
+          {subjectRequirements.length > 1 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-              {career.subjectRequirements.map((r) => {
+              {subjectRequirements.map((r) => {
                 const active = wiSubject === r.subjectName;
                 return (
                   <Pressable key={r.subjectName} onPress={() => { setWiSubject(r.subjectName); setWiMark(markFor(r.subjectName) ?? 50); }} style={{ paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: radius.pill, borderWidth: 1, borderColor: active ? colors.brand : colors.line, backgroundColor: active ? colors.brand : colors.white }}>
@@ -174,7 +176,7 @@ export default function CareerDetailScreen() {
             </View>
             <View style={{ flex: 1, backgroundColor: colors.canvas, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' }}>
               <Text style={text.caption}>Universities</Text>
-              <Text style={{ fontSize: 20, fontFamily: 'Poppins_700Bold', color: whatIf.progsNew > whatIf.progsNow ? GREEN : colors.ink }}>{whatIf.progsNew}/{career.programmes.length}</Text>
+              <Text style={{ fontSize: 20, fontFamily: 'Poppins_700Bold', color: whatIf.progsNew > whatIf.progsNow ? GREEN : colors.ink }}>{whatIf.progsNew}/{programmes.length}</Text>
               <Text style={{ fontSize: 11, color: colors.ink400 }}>{whatIf.progsNew > whatIf.progsNow ? `▲ from ${whatIf.progsNow}` : 'open to you'}</Text>
             </View>
           </View>
@@ -204,7 +206,7 @@ export default function CareerDetailScreen() {
       <View>
         <Text style={[text.section, { marginBottom: spacing.md }]}>Where to study it</Text>
         <View style={{ gap: spacing.md }}>
-          {career.programmes.map((p) => {
+          {programmes.map((p) => {
             const met = aps >= p.minAps;
             return (
               <Card key={p.id}>

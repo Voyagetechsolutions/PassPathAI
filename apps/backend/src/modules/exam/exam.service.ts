@@ -5,12 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { QuestionType, TestStatus } from '@prisma/client';
+import { Difficulty, QuestionType, TestStatus } from '@prisma/client';
 import type { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { OpenAiService } from '../../infra/openai/openai.service';
 import { WeaknessService, TopicResult } from '../weakness/weakness.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { QuestionGenerationService } from '../question-generation/question-generation.service';
 import { gradeResponse } from '../../common/utils/grading';
 import { buildMarkingPrompt } from '../ai/prompts';
 import { GenerateExamDto } from './dto/generate-exam.dto';
@@ -38,6 +39,7 @@ export class ExamService {
     private readonly prisma: PrismaService,
     private readonly weakness: WeaknessService,
     private readonly openai: OpenAiService,
+    private readonly questionGeneration: QuestionGenerationService,
     private readonly subscription: SubscriptionService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
@@ -87,12 +89,30 @@ export class ExamService {
       throw new NotFoundException('Subject not found');
     }
 
-    const pool = await this.prisma.question.findMany({
+    let pool = await this.prisma.question.findMany({
       where: { subjectId: dto.subjectId },
       select: { id: true, type: true, marks: true, topicId: true },
     });
     if (pool.length === 0) {
-      throw new BadRequestException('No questions available for this subject');
+      const topics = await this.prisma.topic.findMany({
+        where: { subjectId: dto.subjectId },
+        orderBy: { orderIndex: 'asc' },
+        take: 3,
+        select: { id: true },
+      });
+      await Promise.all(topics.map((topic) => this.questionGeneration.generate({
+        topicId: topic.id,
+        type: QuestionType.MULTIPLE_CHOICE,
+        difficulty: Difficulty.MEDIUM,
+        count: Math.max(3, Math.ceil(questionCount / Math.max(1, topics.length))),
+      }).catch(() => null)));
+      pool = await this.prisma.question.findMany({
+        where: { subjectId: dto.subjectId },
+        select: { id: true, type: true, marks: true, topicId: true },
+      });
+    }
+    if (pool.length === 0) {
+      throw new BadRequestException('A mock exam could not be prepared from the verified curriculum material yet.');
     }
 
     const picked = this.shuffle(pool).slice(0, questionCount);

@@ -17,6 +17,9 @@ const API_PORT = 3000;
  * the configured apiBaseUrl, then localhost.
  */
 function deriveApiBaseUrl(): string {
+  const environmentUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  if (environmentUrl) return environmentUrl.replace(/\/$/, '');
+
   const hostUri =
     Constants.expoConfig?.hostUri ??
     // Expo Go / older runtimes expose the dev host under different keys.
@@ -31,3 +34,4 @@ function deriveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = deriveApiBaseUrl();
+export const IS_PREVIEW_MODE = __DEV__ && process.env.EXPO_PUBLIC_PREVIEW_MODE === 'true';

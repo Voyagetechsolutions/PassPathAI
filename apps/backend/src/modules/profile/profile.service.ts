@@ -162,10 +162,26 @@ export class ProfileService {
 
   async setMarks(user: AuthenticatedUser, dto: SetMarksDto) {
     const studentId = this.requireStudent(user);
+    const profile = await this.prisma.studentProfile.findUniqueOrThrow({
+      where: { id: studentId },
+      select: { grade: true },
+    });
+    const curriculumSubjects = await this.prisma.subject.findMany({
+      where: {
+        grade: phaseGradeFor(profile.grade),
+        name: { in: dto.subjects.map((subject) => subject.subjectName) },
+      },
+      select: { id: true },
+    });
     await this.prisma.$transaction([
       this.prisma.subjectMark.deleteMany({ where: { studentId } }),
       this.prisma.subjectMark.createMany({
         data: dto.subjects.map((s) => ({ studentId, subjectName: s.subjectName, mark: s.mark })),
+      }),
+      this.prisma.studentSubject.deleteMany({ where: { studentId } }),
+      this.prisma.studentSubject.createMany({
+        data: curriculumSubjects.map((subject) => ({ studentId, subjectId: subject.id })),
+        skipDuplicates: true,
       }),
     ]);
     return this.getMarks(user);

@@ -28,7 +28,7 @@ screen record). Edit in CapCut (free). 15–30 seconds each. Post 1/day.
 - **Beat:** Screen recording — open a topic chat, tap "Real-world example", show the tutor's spaza-shop / taxi-fare style explanation typing out.
 - **Text overlay:** "This tutor never gets tired of you."
 - **CTA:** "PassPath. Early access — link in bio."
-- **Caption:** That feeling when it finally clicks 🤌 An AI tutor that explains YOUR way — stories, real-world examples, or like you're 5. Built for CAPS, Grades 8–12. #matric2026 #matric #southafricantiktok #study #NSC
+- **Caption:** That feeling when it finally clicks 🤌 An AI tutor that explains YOUR way — stories, real-world examples, or like you're 5. Built for CAPS, Grades 10–12. #matric2026 #matric #southafricantiktok #study #NSC
 - **Sound:** trending calm/lofi sound at low volume.
 
 ### Video 2 — "Explain it back"
@@ -76,7 +76,7 @@ screen record). Edit in CapCut (free). 15–30 seconds each. Post 1/day.
 **Bio:**
 🇿🇦 Your Path to Exam Success
 📚 AI tutor · Past papers · Career guidance
-🎓 CAPS Grades 8–12 · Free to start
+🎓 CAPS Grades 10–12 · Free to start
 👇 Early access
 
 **Carousel 1 — "5 ways students lose marks in Paper 1" (per subject, reusable series)**
@@ -102,7 +102,7 @@ Different angle: parents pay the R99. Speak to outcomes, safety, price.
 **Post 1 — for parents:**
 "Private tutors in SA charge R200–R400 per hour. Most families can't do that every week.
 
-PassPath is a study app for Grade 8–12 learners with a real AI tutor that teaches every CAPS subject in a conversation — it explains, checks understanding, and adapts to how your child learns. It includes every recent DBE past paper with memos, mock exams that get marked with feedback, and career guidance based on your child's actual marks.
+PassPath is a study app for Grade 10–12 learners with a real AI tutor that teaches every CAPS subject in a conversation — it explains, checks understanding, and adapts to how your child learns. It includes every recent DBE past paper with memos, mock exams that get marked with feedback, and career guidance based on your child's actual marks.
 
 The free version includes all the past papers. The full version is R99 a month — cancel anytime.
 
@@ -127,7 +127,7 @@ Time these to the school calendar: June exams, trials (Sept), finals (Oct–Nov)
 4. "Your APS = your best 6 subjects. Do you know yours? The app calculates it live."
 
 **Broadcast message (for your contact list / early users):**
-"Hey 👋 I built a study app for matric — AI tutor that actually explains, all the DBE past papers with memos, and it shows which universities your marks qualify you for. Free to start. If you know a Grade 8–12 learner, send them this: www.passpathai.com 🙏"
+"Hey 👋 I built a study app for matric — AI tutor that actually explains, all the DBE past papers with memos, and it shows which universities your marks qualify you for. Free to start. If you know a Grade 10–12 learner, send them this: www.passpathai.com 🙏"
 
 **Share-to-group template (put this INSIDE the app later as a share button):**
 "📚 Found an app with ALL the DBE past papers + memos free, and an AI tutor that explains until you get it. www.passpathai.com"

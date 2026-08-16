@@ -28,10 +28,10 @@ export class SubjectMarkInput {
 }
 
 export class OnboardingDto {
-  @ApiPropertyOptional({ example: 10, minimum: 8, maximum: 12 })
+  @ApiPropertyOptional({ example: 10, minimum: 10, maximum: 12 })
   @IsOptional()
   @IsInt()
-  @Min(8)
+  @Min(10)
   @Max(12)
   grade?: number;
 

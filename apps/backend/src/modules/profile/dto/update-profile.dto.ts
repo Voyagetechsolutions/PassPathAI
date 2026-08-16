@@ -15,10 +15,10 @@ export class UpdateProfileDto {
   @MinLength(1)
   surname?: string;
 
-  @ApiPropertyOptional({ example: 11, minimum: 8, maximum: 12 })
+  @ApiPropertyOptional({ example: 11, minimum: 10, maximum: 12 })
   @IsOptional()
   @IsInt()
-  @Min(8)
+  @Min(10)
   @Max(12)
   grade?: number;
 

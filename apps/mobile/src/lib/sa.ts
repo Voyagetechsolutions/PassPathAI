@@ -1,4 +1,4 @@
-export const GRADES = [8, 9, 10, 11, 12];
+export const GRADES = [10, 11, 12];
 
 /**
  * Map a student's grade to the curriculum phase grade the backend holds subjects
@@ -11,7 +11,7 @@ export function phaseGrade(grade: number): number {
 
 export const SYLLABI: Array<{ value: 'CAPS' | 'IEB'; label: string; sub: string }> = [
   { value: 'CAPS', label: 'CAPS', sub: 'National curriculum (most schools)' },
-  { value: 'IEB', label: 'IEB', sub: 'Independent Examinations Board' },
+  { value: 'IEB', label: 'IEB', sub: 'Coming soon' },
 ];
 
 /**

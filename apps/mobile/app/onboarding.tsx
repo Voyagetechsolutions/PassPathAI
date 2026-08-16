@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApi } from '../src/lib/use-api';
@@ -16,7 +16,7 @@ import {
   ErrorText,
 } from '../src/components/ui';
 import { Compass, Check } from '../src/components/icons';
-import { GRADES, SYLLABI, phaseGrade } from '../src/lib/sa';
+import { SYLLABI, phaseGrade } from '../src/lib/sa';
 import { colors, radius, spacing, text } from '../src/theme';
 import type { ProfileSummary, CareerMatch, Subject, Syllabus } from '../src/lib/types';
 
@@ -24,7 +24,7 @@ interface OnboardingResult extends ProfileSummary {
   diagnostics?: Array<{ testId: string; subjectName: string; questionCount: number }>;
 }
 
-const STEPS = ['Grade', 'Syllabus', 'Subjects', 'Careers'];
+const STEPS = ['Syllabus', 'Subjects', 'Careers'];
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -44,10 +44,9 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 export default function Onboarding() {
   const router = useRouter();
   const { token } = useAuth();
-  const { data: me } = useApi<ProfileSummary>('/profile/me');
+  const { data: me, error: profileError } = useApi<ProfileSummary>('/profile/me');
 
   const [step, setStep] = useState(0);
-  const [grade, setGrade] = useState<number | null>(null);
   const [syllabus, setSyllabus] = useState<Syllabus | null>(null);
   const [marks, setMarks] = useState<Record<string, string>>({});
   const [recs, setRecs] = useState<CareerMatch[] | null>(null);
@@ -55,7 +54,7 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const effectiveGrade = grade ?? me?.grade ?? null;
+  const effectiveGrade = me?.grade ?? null;
   const selected = Object.keys(marks);
 
   // Subjects offered for the student's grade come from the curriculum (Senior
@@ -74,19 +73,18 @@ export default function Onboarding() {
   }
 
   function canAdvance(): boolean {
-    if (step === 0) return effectiveGrade !== null;
-    if (step === 1) return syllabus !== null;
-    if (step === 2) return selected.length > 0 && selected.every((s) => marks[s] !== '');
+    if (step === 0) return syllabus !== null;
+    if (step === 1) return selected.length > 0 && selected.every((s) => marks[s] !== '');
     return true;
   }
 
   async function next() {
     setError(null);
-    if (step < 2) {
+    if (step < 1) {
       setStep(step + 1);
       return;
     }
-    if (step === 2) {
+    if (step === 1) {
       // Submit onboarding, then load recommendations.
       setBusy(true);
       try {
@@ -102,7 +100,7 @@ export default function Onboarding() {
         setDiagnostics(result.diagnostics ?? []);
         const recommended = await apiRequest<CareerMatch[]>('/careers/recommended', { token });
         setRecs(recommended);
-        setStep(3);
+        setStep(2);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save your profile.');
       } finally {
@@ -116,7 +114,7 @@ export default function Onboarding() {
   if (!me) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Loading label="Setting up…" />
+        {profileError ? <View style={{ padding: spacing.lg }}><ErrorText message={profileError} /></View> : <Loading label="Setting up…" />}
       </SafeAreaView>
     );
   }
@@ -130,31 +128,21 @@ export default function Onboarding() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={8}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {error ? <ErrorText message={error} /> : null}
 
         {step === 0 && (
-          <View>
-            <Text style={text.h1}>What grade are you in?</Text>
-            <Text style={[text.body, { marginTop: 4, marginBottom: spacing.lg }]}>We tailor everything to your grade.</Text>
-            <View style={styles.chipRow}>
-              {GRADES.map((g) => (
-                <Chip key={g} label={`Grade ${g}`} active={effectiveGrade === g} onPress={() => setGrade(g)} />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {step === 1 && (
           <View>
             <Text style={text.h1}>Which syllabus?</Text>
             <Text style={[text.body, { marginTop: 4, marginBottom: spacing.lg }]}>This sets your curriculum and exam style.</Text>
             <View style={{ gap: spacing.md }}>
               {SYLLABI.map((s) => {
                 const active = syllabus === s.value;
+                const disabled = s.value === 'IEB';
                 return (
-                  <Pressable key={s.value} onPress={() => setSyllabus(s.value)} style={({ pressed }) => pressed && { opacity: 0.7 }}>
-                    <Card style={active ? { borderColor: colors.navy, borderWidth: 1.5 } : undefined}>
+                  <Pressable key={s.value} disabled={disabled} onPress={() => setSyllabus(s.value)} style={({ pressed }) => [{ opacity: disabled ? 0.58 : 1 }, pressed && { opacity: 0.7 }]}>
+                    <Card style={active ? { borderColor: colors.navy, borderWidth: 1.5 } : disabled ? { backgroundColor: colors.canvas } : undefined}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View>
                           <Text style={text.title}>{s.label}</Text>
@@ -170,7 +158,7 @@ export default function Onboarding() {
           </View>
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <View>
             <Text style={text.h1}>Your subjects & marks</Text>
             <Text style={[text.body, { marginTop: 4, marginBottom: spacing.lg }]}>
@@ -196,7 +184,10 @@ export default function Onboarding() {
                       {active ? (
                         <TextInput
                           value={marks[s]}
-                          onChangeText={(v) => setMarks((m) => ({ ...m, [s]: v.replace(/[^0-9]/g, '').slice(0, 3) }))}
+                          onChangeText={(v) => {
+                            const digits = v.replace(/[^0-9]/g, '').slice(0, 3);
+                            setMarks((m) => ({ ...m, [s]: digits ? String(Math.min(100, Number(digits))) : '' }));
+                          }}
                           keyboardType="number-pad"
                           placeholder="%"
                           placeholderTextColor={colors.ink300}
@@ -211,7 +202,7 @@ export default function Onboarding() {
           </View>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <View>
             {diagnostics && diagnostics.length > 0 ? (
               <Card style={{ marginBottom: spacing.lg, borderColor: colors.navy, borderWidth: 1.5 }}>
@@ -253,14 +244,15 @@ export default function Onboarding() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        {step > 0 && step < 3 ? (
+        {step > 0 && step < 2 ? (
           <View style={{ flex: 1 }}><SecondaryButton label="Back" onPress={() => setStep(step - 1)} /></View>
         ) : null}
         <View style={{ flex: 2 }}>
           <PrimaryButton
-            label={busy ? 'Saving…' : step === 2 ? 'See my careers' : step === 3 ? 'Start learning' : 'Continue'}
+            label={busy ? 'Saving…' : step === 1 ? 'See my careers' : step === 2 ? 'Start learning' : 'Continue'}
             onPress={next}
             disabled={busy || !canAdvance()}
           />

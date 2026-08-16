@@ -1,4 +1,5 @@
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, IS_PREVIEW_MODE } from './config';
+import { previewResponse } from './preview-data';
 
 export class ApiError extends Error {
   constructor(
@@ -17,6 +18,10 @@ interface RequestOptions {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  if (IS_PREVIEW_MODE) {
+    await Promise.resolve();
+    return previewResponse(path, options.method ?? 'GET', options.body) as T;
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (options.token) {
     headers.Authorization = `Bearer ${options.token}`;

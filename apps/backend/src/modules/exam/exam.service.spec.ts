@@ -5,6 +5,7 @@ import { ExamService } from './exam.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { WeaknessService } from '../weakness/weakness.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { QuestionGenerationService } from '../question-generation/question-generation.service';
 
 describe('ExamService', () => {
   let service: ExamService;
@@ -16,6 +17,7 @@ describe('ExamService', () => {
     prisma = {
       subject: { findUnique: jest.fn() },
       question: { findMany: jest.fn() },
+      topic: { findMany: jest.fn().mockResolvedValue([]) },
       examPaper: { create: jest.fn(), findUnique: jest.fn(), count: jest.fn().mockResolvedValue(0) },
       examAttempt: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
       examResponse: { createMany: jest.fn() },
@@ -26,11 +28,13 @@ describe('ExamService', () => {
     subscription = { isPremium: jest.fn().mockResolvedValue(true) };
     // AI marker awards full marks (clamped to each question's max) for the test.
     const openai = { isConfigured: true, chatJson: jest.fn().mockResolvedValue({ marks: 99, feedback: 'Correct.' }) };
+    const questionGeneration = { generate: jest.fn().mockResolvedValue({ generated: 0, questions: [] }) };
     const config = { get: jest.fn().mockReturnValue({ tutorMessages: 5, mockExams: 1 }) };
     service = new ExamService(
       prisma as unknown as PrismaService,
       weakness as unknown as WeaknessService,
       openai as unknown as import('../../infra/openai/openai.service').OpenAiService,
+      questionGeneration as unknown as QuestionGenerationService,
       subscription as unknown as SubscriptionService,
       config as unknown as import('@nestjs/config').ConfigService<
         import('../../config/configuration').AppConfig,

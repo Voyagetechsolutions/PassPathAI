@@ -32,7 +32,7 @@ export class RegisterDto {
   @ApiPropertyOptional({ example: 10, description: 'Required for students (8–12)' })
   @IsOptional()
   @IsInt()
-  @Min(8)
+  @Min(10)
   @Max(12)
   grade?: number;
 

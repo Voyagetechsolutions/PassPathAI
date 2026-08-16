@@ -1,4 +1,6 @@
-import { Linking, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { useApi } from '../src/lib/use-api';
 import { API_BASE_URL } from '../src/lib/config';
@@ -11,9 +13,19 @@ import type { PastPaper } from '../src/lib/types';
 export default function PastPapersScreen() {
   const router = useRouter();
   const { data, loading, error } = useApi<PastPaper[]>('/past-papers?mine=true');
+  const [openError, setOpenError] = useState<string | null>(null);
 
-  function open(p: PastPaper) {
-    void Linking.openURL(`${API_BASE_URL}${p.fileUrl}`);
+  async function open(p: PastPaper) {
+    setOpenError(null);
+    try {
+      const fileUrl = /^https?:\/\//i.test(p.fileUrl) ? p.fileUrl : `${API_BASE_URL}${p.fileUrl}`;
+      await WebBrowser.openBrowserAsync(fileUrl, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+        controlsColor: colors.navy,
+      });
+    } catch {
+      setOpenError('Could not open this paper. Check your connection and try again.');
+    }
   }
 
   if (loading) return <Screen onBack={() => router.back()}><Loading label="Loading past papers…" /></Screen>;
@@ -30,8 +42,9 @@ export default function PastPapersScreen() {
 
   return (
     <Screen title="Past papers" subtitle="Public DBE examination resources (education.gov.za). PassPath is independent and not affiliated with any government entity." onBack={() => router.back()}>
+      {openError ? <ErrorText message={openError} /> : null}
       {!data || data.length === 0 ? (
-        <EmptyState title="No past papers yet" message="Papers added by your school will appear here." />
+        <EmptyState title="No papers for your subjects yet" message="The DBE paper library will appear here as soon as papers are available for your selected subjects." />
       ) : (
         [...groups.entries()].map(([subject, papers]) => (
           <View key={subject}>

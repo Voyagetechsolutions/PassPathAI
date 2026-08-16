@@ -103,7 +103,7 @@ export default function StudyTab() {
           {subjects.map((s) => {
             const active = s.id === subjectId;
             return (
-              <Pressable key={s.id} onPress={() => setSubjectId(s.id)} style={{ alignItems: 'center', width: 64 }}>
+              <Pressable key={s.id} onPress={() => setSubjectId(s.id)} style={{ alignItems: 'center', width: 88 }}>
                 <View style={{ width: 56, height: 56, borderRadius: radius.md, backgroundColor: active ? colors.brand : colors.navy50, alignItems: 'center', justifyContent: 'center' }}>
                   {subjectIcon(s.name, active ? colors.white : colors.ink600)}
                 </View>

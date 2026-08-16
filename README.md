@@ -1,6 +1,6 @@
 # PassPath
 
-Curriculum-aligned exam-preparation platform for South African high-school students (Grades 8–12).
+Curriculum-aligned exam-preparation platform for South African high-school students (Grades 10–12; IEB coming soon).
 
 PassPath is **not** a chatbot. It is an exam-training system built around the CAPS
 curriculum: diagnostic testing, weakness detection, adaptive practice, grounded AI

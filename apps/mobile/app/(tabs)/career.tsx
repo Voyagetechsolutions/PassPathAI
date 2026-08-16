@@ -3,13 +3,14 @@ import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/lib/auth';
 import { apiRequest } from '../../src/lib/api';
+import { useApi } from '../../src/lib/use-api';
 import { Screen } from '../../src/components/screen';
 import { Card, ScoreRing, ProgressBar, Slider, InfoTip, SkeletonCard, ErrorText } from '../../src/components/ui';
 import { Compass, GradCap, Target, TrendUp, Check, ChevronRight } from '../../src/components/icons';
-import { SUBJECTS } from '../../src/lib/sa';
+import { phaseGrade } from '../../src/lib/sa';
 import { careerEmoji, computeAps, factsFor } from '../../src/lib/careers';
 import { colors, radius, spacing, text } from '../../src/theme';
-import type { CareerMatch, SubjectMark, ProfileSummary } from '../../src/lib/types';
+import type { CareerMatch, SubjectMark, ProfileSummary, Subject } from '../../src/lib/types';
 
 const GREEN = '#16A34A';
 const matchWord = (p: number) => (p >= 90 ? 'Excellent Match' : p >= 75 ? 'Strong Match' : p >= 55 ? 'Good Match' : 'Keep Building');
@@ -21,6 +22,10 @@ let hubCache: { marks: Record<string, string>; recs: CareerMatch[] } | null = nu
 export default function CareerTab() {
   const router = useRouter();
   const { token } = useAuth();
+  const { data: profile } = useApi<ProfileSummary>('/profile/me');
+  const { data: curriculumSubjects } = useApi<Subject[]>(
+    profile ? `/curriculum/subjects?grade=${phaseGrade(profile.grade)}` : null,
+  );
   const [marks, setMarks] = useState<Record<string, string>>(hubCache?.marks ?? {});
   const [results, setResults] = useState<CareerMatch[] | null>(hubCache?.recs ?? null);
   const [aps, setAps] = useState<number>(hubCache?.recs[0]?.computedAps ?? 0);
@@ -352,12 +357,42 @@ export default function CareerTab() {
             </Card>
           ) : null}
 
-          {/* Career timeline */}
-          {top ? (
-            <Card>
-              <Text style={[text.section, { marginBottom: spacing.lg }]}>Your Path</Text>
-              <Timeline steps={['Today', `Improve ${lowest?.name ?? 'a subject'}`, `Reach APS ${Math.max(aps + 2, 30)}`, 'Apply to university', 'Receive your offer', 'Graduate', `Become a ${top.title}`]} />
-            </Card>
+          {/* Multiple ranked career routes — learners should never be boxed into one future. */}
+          {(results ?? []).length > 0 ? (
+            <View>
+              <Text style={[text.section, { marginBottom: 4 }]}>Your Career Paths</Text>
+              <Text style={[text.caption, { marginBottom: spacing.md }]}>Compare several routes based on your subjects and marks. Our catalogue includes all 26 South African public universities.</Text>
+              <View style={{ gap: spacing.md }}>
+                {(results ?? []).slice(0, 6).map((career, index) => {
+                  const minAps = career.programmes.length ? Math.min(...career.programmes.map((programme) => programme.minAps)) : 30;
+                  const match = Math.round(career.admissionLikelihood * 100);
+                  return (
+                    <Card key={career.careerId}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, marginBottom: spacing.md }}>
+                        <Text style={{ fontSize: 30 }}>{careerEmoji(career.title, career.faculty)}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[text.title, { color: colors.ink }]}>{index + 1}. {career.title}</Text>
+                          <Text style={[text.caption, { marginTop: 2 }]}>{match}% match · {career.programmes.length} university option{career.programmes.length === 1 ? '' : 's'}</Text>
+                        </View>
+                        <View style={{ backgroundColor: career.eligible ? '#E7F6EC' : colors.warn50, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5 }}>
+                          <Text style={{ fontSize: 11, fontFamily: 'Poppins_700Bold', color: career.eligible ? GREEN : colors.warn }}>{career.eligible ? 'Open' : 'Build'}</Text>
+                        </View>
+                      </View>
+                      <Timeline steps={[
+                        `Today · APS ${aps}`,
+                        aps >= minAps ? `APS ${minAps} entry level reached` : `Build towards APS ${minAps}`,
+                        `Apply to matching ${career.programmes.length === 1 ? 'university' : 'universities'}`,
+                        `Complete ${career.programmes[0]?.programmeName ?? 'the required qualification'}`,
+                        `Career goal · ${career.title}`,
+                      ]} />
+                      <Pressable onPress={() => router.push({ pathname: '/career-detail', params: { careerId: career.careerId } })} style={({ pressed }) => [{ marginTop: spacing.lg, borderRadius: radius.md, backgroundColor: colors.navy50, paddingVertical: 11, alignItems: 'center' }, pressed && { opacity: 0.7 }]}>
+                        <Text style={{ fontSize: 13, fontFamily: 'Poppins_700Bold', color: colors.brand }}>View this path</Text>
+                      </Pressable>
+                    </Card>
+                  );
+                })}
+              </View>
+            </View>
           ) : null}
 
           {/* Daily motivation — concrete outcomes */}
@@ -380,6 +415,7 @@ export default function CareerTab() {
         marks={marks}
         setMarks={setMarks}
         saving={saving}
+        subjectCatalogue={(curriculumSubjects ?? profile?.subjects ?? []).map((subject) => subject.name)}
         onSave={save}
         onClose={() => setEditOpen(false)}
       />
@@ -427,16 +463,17 @@ function Timeline({ steps }: { steps: string[] }) {
   );
 }
 
-function MarksModal({ visible, marks, setMarks, saving, onSave, onClose }: {
+function MarksModal({ visible, marks, setMarks, saving, subjectCatalogue, onSave, onClose }: {
   visible: boolean;
   marks: Record<string, string>;
   setMarks: (fn: (m: Record<string, string>) => Record<string, string>) => void;
   saving: boolean;
+  subjectCatalogue: string[];
   onSave: (next: Record<string, string>) => void;
   onClose: () => void;
 }) {
   const subjects = Object.keys(marks);
-  const available = SUBJECTS.filter((s) => !(s in marks));
+  const available = subjectCatalogue.filter((s) => !(s in marks));
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }}>
@@ -451,7 +488,7 @@ function MarksModal({ visible, marks, setMarks, saving, onSave, onClose }: {
                     <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.ink400, fontSize: 15 }}>×</Text></View>
                     <Text style={[text.body, { color: colors.ink }]}>{s}</Text>
                   </Pressable>
-                  <TextInput value={marks[s]} onChangeText={(v) => setMarks((m) => ({ ...m, [s]: v.replace(/[^0-9]/g, '').slice(0, 3) }))} keyboardType="number-pad" placeholder="%" placeholderTextColor={colors.ink300} style={{ width: 56, textAlign: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: radius.sm, paddingVertical: 8, fontSize: 15, color: colors.ink, backgroundColor: colors.white }} />
+                  <TextInput value={marks[s]} onChangeText={(v) => { const digits = v.replace(/[^0-9]/g, '').slice(0, 3); setMarks((m) => ({ ...m, [s]: digits ? String(Math.min(100, Number(digits))) : '' })); }} keyboardType="number-pad" placeholder="%" placeholderTextColor={colors.ink300} style={{ width: 56, textAlign: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: radius.sm, paddingVertical: 8, fontSize: 15, color: colors.ink, backgroundColor: colors.white }} />
                 </View>
               ))}
             </View>

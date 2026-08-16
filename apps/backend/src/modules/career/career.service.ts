@@ -194,6 +194,8 @@ export class CareerService {
   }
 
   private norm(s: string): string {
-    return s.trim().toLowerCase();
+    const value = s.trim().toLowerCase();
+    if (value === 'english home language' || value === 'english first additional language') return 'english';
+    return value;
   }
 }

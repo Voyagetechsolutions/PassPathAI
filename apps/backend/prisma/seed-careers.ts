@@ -1,4 +1,10 @@
+import * as fs from 'node:fs';
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+
+const databaseUrls = [...fs.readFileSync('.env', 'utf8').matchAll(/^DATABASE_URL=(.+)$/gm)]
+  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+process.env.DATABASE_URL = databaseUrls.at(-1);
 
 const prisma = new PrismaClient();
 
@@ -54,19 +60,19 @@ const TIER: Record<string, number> = {};
 // Which universities offer each field (most prominent first; capped to 6 / career).
 const G: Record<string, string[]> = {
   COMM_TOP: ['UCT', 'WITS', 'SU', 'UP', 'UKZN', 'RU'],
-  COMM: ['UP', 'UKZN', 'UJ', 'NWU', 'NMU', 'UWC'],
+  COMM: ['UP', 'UJ', 'NWU', 'UNISA', 'UMP', 'UNIZULU'],
   ENG: ['WITS', 'UP', 'UCT', 'SU', 'UKZN', 'UJ'],
-  ENG_TECH: ['TUT', 'CPUT', 'DUT', 'VUT', 'NMU', 'UJ'],
+  ENG_TECH: ['TUT', 'CPUT', 'DUT', 'VUT', 'CUT', 'MUT'],
   BUILT: ['UCT', 'WITS', 'UP', 'UKZN', 'NMU', 'TUT'],
   SCI: ['UCT', 'WITS', 'UP', 'SU', 'UKZN', 'UJ'],
-  SCI_BROAD: ['UP', 'UKZN', 'UJ', 'NWU', 'UFS', 'UWC'],
-  SCI_AGRI: ['UP', 'SU', 'UKZN', 'UFS', 'NWU', 'UFH'],
+  SCI_BROAD: ['UP', 'UKZN', 'UJ', 'NWU', 'UFS', 'UFH'],
+  SCI_AGRI: ['UP', 'SU', 'UKZN', 'UFS', 'UL', 'UNIVEN'],
   MED: ['UCT', 'WITS', 'UP', 'UKZN', 'SU', 'UFS'],
   VET: ['UP'],
   PHARM: ['RU', 'UWC', 'NWU', 'UKZN', 'SMU', 'TUT'],
   HEALTH: ['UCT', 'WITS', 'UP', 'UKZN', 'SU', 'UWC'],
   LAW: ['UCT', 'WITS', 'UP', 'SU', 'UKZN', 'UJ'],
-  HUMAN: ['UCT', 'WITS', 'UP', 'SU', 'UJ', 'RU'],
+  HUMAN: ['UCT', 'WITS', 'UP', 'SPU', 'WSU', 'RU'],
   DESIGN: ['CPUT', 'TUT', 'DUT', 'NMU', 'UJ', 'VUT'],
 };
 
@@ -238,8 +244,10 @@ async function waitForDb(): Promise<void> {
 
 async function main(): Promise<void> {
   await waitForDb();
+  const requestedGroup = process.env.CAREER_SEED_GROUP;
+  const selectedCareers = requestedGroup ? CAREERS.filter((career) => career.group === requestedGroup) : CAREERS;
   let count = 0;
-  for (const c of CAREERS) {
+  for (const c of selectedCareers) {
     const career = await prisma.career.upsert({
       where: { title: c.title },
       update: { description: c.description, faculty: c.faculty },
@@ -259,7 +267,7 @@ async function main(): Promise<void> {
     count += 1;
     if (count % 20 === 0) {
       // eslint-disable-next-line no-console
-      console.log(`  …seeded ${count}/${CAREERS.length}`);
+      console.log(`  …seeded ${count}/${selectedCareers.length}`);
     }
   }
   const total = await prisma.career.count();

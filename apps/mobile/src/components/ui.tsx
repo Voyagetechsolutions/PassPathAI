@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   PanResponder,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -15,23 +16,61 @@ import { colors, fonts, radius, shadow, spacing, text } from '../theme';
 
 /** A draggable slider — tap or drag anywhere on the track. Powers the What-If tool. */
 export function Slider({ value, min = 0, max = 100, step = 1, tone = colors.brand, onChange }: { value: number; min?: number; max?: number; step?: number; tone?: string; onChange: (v: number) => void }) {
+  const trackRef = useRef<View>(null);
   const [w, setW] = useState(1);
+  const widthRef = useRef(1);
+  const leftRef = useRef(0);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const rangeRef = useRef({ min, max, step });
+  rangeRef.current = { min, max, step };
   const set = (x: number) => {
-    const r = Math.max(0, Math.min(1, x / Math.max(1, w)));
-    const v = Math.round((min + r * (max - min)) / step) * step;
-    onChange(Math.max(min, Math.min(max, v)));
+    const { min: currentMin, max: currentMax, step: currentStep } = rangeRef.current;
+    const r = Math.max(0, Math.min(1, x / Math.max(1, widthRef.current)));
+    const v = Math.round((currentMin + r * (currentMax - currentMin)) / currentStep) * currentStep;
+    onChangeRef.current(Math.max(currentMin, Math.min(currentMax, v)));
+  };
+  const setFromPointer = (event: { nativeEvent: { pageX?: number; clientX?: number; locationX?: number } }, moveX?: number) => {
+    const pageX = moveX || event.nativeEvent.pageX || event.nativeEvent.clientX;
+    set(pageX !== undefined ? pageX - leftRef.current : (event.nativeEvent.locationX ?? 0));
   };
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => set(e.nativeEvent.locationX),
-      onPanResponderMove: (e) => set(e.nativeEvent.locationX),
+      onPanResponderGrant: (event, gesture) => setFromPointer(event, gesture.x0 || gesture.moveX),
+      onPanResponderMove: (event, gesture) => setFromPointer(event, gesture.moveX),
     }),
   ).current;
   const pct = ((value - min) / (max - min)) * 100;
+  if (Platform.OS === 'web') {
+    const handleWebChange = (event: { target: { value: string } }) => onChange(Number(event.target.value));
+    return createElement('input', {
+      type: 'range',
+      min,
+      max,
+      step,
+      value,
+      'aria-label': 'What-if percentage',
+      onChange: handleWebChange,
+      onInput: handleWebChange,
+      style: { width: '100%', height: 44, accentColor: tone, cursor: 'pointer' },
+    });
+  }
   return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} {...pan.panHandlers} style={{ height: 36, justifyContent: 'center' }}>
+    <View
+      ref={trackRef}
+      accessibilityRole="adjustable"
+      accessibilityValue={{ min, max, now: value }}
+      onLayout={(e) => {
+        const width = e.nativeEvent.layout.width;
+        widthRef.current = width;
+        setW(width);
+        trackRef.current?.measureInWindow((x) => { leftRef.current = x; });
+      }}
+      {...pan.panHandlers}
+      style={{ height: 44, justifyContent: 'center' }}
+    >
       <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.navy50 }}>
         <View style={{ height: 8, width: `${pct}%`, borderRadius: radius.pill, backgroundColor: tone }} />
       </View>

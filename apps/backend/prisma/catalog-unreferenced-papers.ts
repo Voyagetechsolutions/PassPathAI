@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 const storageDir = process.env.STORAGE_LOCAL_DIR ?? './storage';
 const papersDir = path.join(storageDir, 'pastpapers');
-const grade = Number.parseInt(process.env.PAPER_DEFAULT_GRADE ?? '12', 10);
+const defaultGrade = Number.parseInt(process.env.PAPER_DEFAULT_GRADE ?? '12', 10);
 const run = process.env.UNREFERENCED_PAPERS_RUN === '1';
 const subjectNames: Record<string, string> = {
   EGD: 'Engineering Graphics and Design',
@@ -26,7 +26,12 @@ function listPdfs(dir: string): string[] {
   return files;
 }
 
-function inferSubjectCode(filename: string): string | null {
+function inferGrade(filename: string): number {
+  const match = filename.match(/-G(10|11|12)-/i);
+  return match ? Number(match[1]) : defaultGrade;
+}
+
+function inferSubjectCode(filename: string, grade: number): string | null {
   const match = filename.match(/^([A-Z]+(?:-[A-Z]+)?)-G\d+-/i);
   if (!match) return null;
   const prefix = match[1].toUpperCase() === 'ENG-FAL' ? 'ENFAL' : match[1].toUpperCase();
@@ -85,7 +90,8 @@ async function main(): Promise<void> {
     ) {
       continue;
     }
-    const subjectCode = inferSubjectCode(basename);
+    const grade = inferGrade(basename);
+    const subjectCode = inferSubjectCode(basename, grade);
     const year = inferYear(basename);
     if (!subjectCode || !year) {
       console.warn(`SKIP cannot infer subject/year: ${storageKey}`);

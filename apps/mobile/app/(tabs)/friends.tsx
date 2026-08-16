@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/screen';
 import { Badge, Card, EmptyState, ErrorText, Loading, PrimaryButton, SecondaryButton } from '../../src/components/ui';
 import { Flame, Users } from '../../src/components/icons';
@@ -15,6 +15,7 @@ interface SocialSummary {
   rewardPoints: number;
   rewards: Array<{ id: string; title: string; description: string; icon: string; points: number; earnedAt: string }>;
   pending: Array<{ id: string; friend: Person }>;
+  outgoing: Array<{ id: string; friend: Person }>;
   friends: Array<{ id: string; friend: Person; streak: { currentStreak: number; longestStreak: number } | null; lastMessage: { content: string } | null }>;
 }
 
@@ -25,6 +26,8 @@ export default function FriendsTab() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   async function action(path: string, method = 'POST', body?: unknown) {
     setBusy(true); setActionError(null);
@@ -83,9 +86,33 @@ export default function FriendsTab() {
         <Card key={request.id}>
           <Text style={text.title}>{request.friend.firstName} wants to study with you</Text>
           <Text style={text.caption}>{request.friend.email}</Text>
-          <View style={{ marginTop: spacing.md }}><PrimaryButton label="Accept" disabled={busy} onPress={() => action(`/social/friends/${request.id}/accept`, 'PATCH')} /></View>
+          <View style={{ marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flex: 1 }}><SecondaryButton label="Decline" disabled={busy} onPress={() => action(`/social/friends/${request.id}`, 'DELETE')} /></View>
+            <View style={{ flex: 1 }}><PrimaryButton label="Accept" disabled={busy} onPress={() => action(`/social/friends/${request.id}/accept`, 'PATCH')} /></View>
+          </View>
         </Card>
       ))}
+
+      {data?.outgoing?.length ? (
+        <View>
+          <Text style={[text.section, { marginBottom: spacing.md }]}>Sent requests</Text>
+          <View style={{ gap: spacing.sm }}>
+            {data.outgoing.map((request) => (
+              <Card key={request.id} style={{ paddingVertical: spacing.md }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={text.title}>{request.friend.firstName} {request.friend.surname}</Text>
+                    <Text style={text.caption}>Waiting for a response</Text>
+                  </View>
+                  <Pressable disabled={busy} onPress={() => action(`/social/friends/${request.id}`, 'DELETE')} hitSlop={8}>
+                    <Text style={{ color: colors.danger, fontFamily: 'Poppins_600SemiBold', fontSize: 13 }}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <View>
         <Text style={[text.section, { marginBottom: spacing.md }]}>Your study circle</Text>

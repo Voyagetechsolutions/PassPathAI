@@ -28,17 +28,18 @@ Everything to copy-paste into the Google Play Console. Work top to bottom.
 | Email | mthokochaza@gmail.com |
 | Website | https://www.passpathai.com (or your domain) |
 | Privacy policy URL | https://www.passpathai.com/privacy.html |
+| Account deletion URL | https://www.passpathai.com/delete-account.html |
 
 ## 2. Short description (max 80 chars)
 
-> AI tutor, real DBE past papers & career guidance for SA Grades 8–12.
+> AI tutor, real DBE past papers & career guidance for SA Grades 10–12.
 
 ## 3. Full description
 
 > **The AI tutor that actually teaches you.**
 >
 > PassPath is a study app built in South Africa for CAPS learners in Grades
-> 8–12. Instead of dumping notes on you, a real AI tutor teaches every topic
+> 10–12. Instead of dumping notes on you, a real AI tutor teaches every topic
 > in a back-and-forth conversation — it explains your way (stories,
 > real-world examples, or like you're 5), checks you're following, and
 > remembers how you learn.

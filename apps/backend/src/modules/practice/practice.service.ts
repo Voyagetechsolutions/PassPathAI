@@ -4,6 +4,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { OpenAiService } from '../../infra/openai/openai.service';
 import { WeaknessService } from '../weakness/weakness.service';
 import { buildExplainWrongPrompt } from '../ai/prompts';
+import { QuestionGenerationService } from '../question-generation/question-generation.service';
 import { AnswerDto } from './dto/answer.dto';
 
 const ENCOURAGEMENT = [
@@ -24,6 +25,7 @@ export class PracticeService {
     private readonly prisma: PrismaService,
     private readonly weakness: WeaknessService,
     private readonly openai: OpenAiService,
+    private readonly questionGeneration: QuestionGenerationService,
   ) {}
 
   private requireStudent(studentId: string | undefined): string {
@@ -45,9 +47,22 @@ export class PracticeService {
     // Be gentle: strugglers (and brand-new topics) start easy and only climb when ready.
     const target = score < 0.4 ? Difficulty.EASY : score < 0.75 ? Difficulty.MEDIUM : Difficulty.HARD;
 
-    const q = await this.pickQuestion(topicId, target);
+    let q = await this.pickQuestion(topicId, target);
     if (!q) {
-      throw new BadRequestException('No practice questions for this topic yet.');
+      try {
+        await this.questionGeneration.generate({
+          topicId,
+          type: QuestionType.MULTIPLE_CHOICE,
+          difficulty: target,
+          count: 3,
+        });
+        q = await this.pickQuestion(topicId, target);
+      } catch {
+        // The clear learner-facing error below covers unavailable AI or source data.
+      }
+    }
+    if (!q) {
+      throw new BadRequestException('Practice could not be prepared for this topic yet. Try the AI lesson while verified questions are generated.');
     }
     return {
       questionId: q.id,

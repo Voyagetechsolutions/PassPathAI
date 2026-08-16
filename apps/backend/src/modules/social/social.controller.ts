@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { CheckInDto } from './dto/check-in.dto';
@@ -21,6 +21,11 @@ export class SocialController {
   @Patch('friends/:id/accept')
   accept(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.social.acceptFriend(user, id);
+  }
+
+  @Delete('friends/:id')
+  remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.social.removeFriend(user, id);
   }
 
   @Get('friends/:id/messages')

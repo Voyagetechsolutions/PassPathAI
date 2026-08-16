@@ -208,3 +208,11 @@ export const Logout = (p: IconProps) => (
     <Path d="M10 12h10M17 9l3 3-3 3" />
   </S>
 );
+
+export const Eye = ({ hidden = false, ...p }: IconProps & { hidden?: boolean }) => (
+  <S {...p}>
+    <Path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+    <Circle cx={12} cy={12} r={2.5} />
+    {hidden ? <Path d="M4 4l16 16" /> : null}
+  </S>
+);

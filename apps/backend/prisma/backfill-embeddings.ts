@@ -1,8 +1,13 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
+import * as fs from 'node:fs';
 import { withDbRetry } from '../src/common/utils/db-retry';
 
-// @prisma/client loads .env into process.env on import, so the OpenAI key is available.
+const envText = fs.readFileSync('.env', 'utf8');
+const databaseUrls = [...envText.matchAll(/^DATABASE_URL=(.+)$/gm)]
+  .map((match) => match[1].trim().replace(/^['"]|['"]$/g, ''));
+process.env.DATABASE_URL = databaseUrls.at(-1);
+
 const prisma = new PrismaClient();
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small';

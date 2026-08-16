@@ -43,6 +43,12 @@
     "db:audit:content": "ts-node prisma/audit-content.ts",
     "db:catalog:papers": "ts-node prisma/backfill-past-paper-catalog.ts",
     "db:catalog:unreferenced-papers": "ts-node prisma/catalog-unreferenced-papers.ts",
+    "db:repair:paper-grades": "node prisma/repair-past-paper-grades.cjs",
+    "db:audit:subjects": "node prisma/audit-subject-content.cjs",
+    "db:seed:fet-topics": "node prisma/seed-all-fet-topics.cjs",
+    "db:dedupe:fet-topics": "node prisma/dedupe-fet-topics.cjs",
+    "db:repair:fet-subjects": "node prisma/ensure-fet-subjects.cjs",
+    "db:ingest:fet-references": "ts-node prisma/ingest-fet-reference-corpus.ts",
     "db:ocr:syllabus": "ts-node prisma/ocr-syllabus-textract.ts",
     "db:normalize:siyavula": "node prisma/normalize-siyavula-subject-codes.cjs",
     "db:normalize:storage-keys": "node prisma/normalize-storage-keys.cjs"

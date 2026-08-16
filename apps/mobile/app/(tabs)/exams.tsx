@@ -141,7 +141,12 @@ export default function ExamsTab() {
             </Pressable>
           </View>
           {subjectPapers.length === 0 ? (
-            <EmptyState title="No papers yet" message={`Past papers for ${selected?.name ?? 'this subject'} will appear here.`} />
+            <EmptyState
+              title="No verified paper available"
+              message={me?.grade && me.grade < 12
+                ? `National DBE papers are limited in Grade ${me.grade} because many assessments are set by schools and provinces. You can still learn every CAPS topic, practise, and generate a mock for ${selected?.name ?? 'this subject'}.`
+                : `A verified paper for ${selected?.name ?? 'this subject'} has not been added yet. CAPS lessons and generated practice remain available.`}
+            />
           ) : (
             <View style={{ gap: spacing.md }}>
               {(tab === 'Overview' ? subjectPapers.slice(0, 4) : subjectPapers).map((p) => (

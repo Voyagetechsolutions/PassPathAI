@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "PassPath",
+    "description": "CAPS-aligned AI study support, past papers and career guidance for South African Grade 10–12 learners.",
     "slug": "pass-path",
     "version": "1.0.0",
     "orientation": "portrait",
